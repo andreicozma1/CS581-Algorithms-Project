@@ -4,9 +4,15 @@
 
 Evolution of Reinforcement Learning methods from pure Dynamic Programming-based methods to Monte Carlo methods + Bellman Optimization Comparison  
 
+## Requirements
+
+- Python 3
+- Gymnasium: <https://pypi.org/project/gymnasium/>
+- WandB: <https://pypi.org/project/wandb/> (optional for logging)
+
 ## Monte-Carlo Agent
 
-The implementation of the epsilon-greedy Monte-Carlo agent for the [Cliff Walking](https://gymnasium.farama.org/environments/toy_text/cliff_walking/) toy environment.
+The implementation of the epsilon-greedy Monte-Carlo agent for the [Cliff Walking](https://gymnasium.farama.org/environments/toy_text/cliff_walking/) toy environment as part of Gymnasium.
 
 ### Training
 

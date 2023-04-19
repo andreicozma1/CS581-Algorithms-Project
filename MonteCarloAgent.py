@@ -116,7 +116,6 @@ class MonteCarloAgent:
 
             if e % test_every == 0:
                 test_success_rate = self.test(verbose=False, **kwargs)
-
                 if log_wandb:
                     self.wandb_log_img(episode=e)
 
