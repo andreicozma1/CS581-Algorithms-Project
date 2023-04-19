@@ -256,6 +256,12 @@ def main():
         default="train",
         help="WandB job type for logging. (default: train)",
     )
+    parser.add_argument(
+        "--wandb_run_name_suffix",
+        type=str,
+        default=None,
+        help="WandB run name suffix for logging. (default: None)",
+    )
 
     args = parser.parse_args()
 
@@ -267,6 +273,8 @@ def main():
     )
 
     run_name = f"mc_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}"
+    if args.wandb_run_name_suffix is not None:
+        run_name += f"+{args.wandb_run_name_suffix}"
 
     try:
         if args.train:
