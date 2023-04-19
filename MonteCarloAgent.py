@@ -54,13 +54,13 @@ class MonteCarloAgent:
             # Sample an action from the policy
             action = self.choose_action(state)
             # Take the action and observe the reward and next state
-            next_state, reward, finished, _, _ = self.env.step(action)
+            next_state, reward, finished, truncated, _ = self.env.step(action)
             # Keeping track of the trajectory
             episode_hist.append((state, action, reward))
             state = next_state
             # This is where the agent got to the goal.
             # In the case in which agent jumped off the cliff, it is simply respawned at the start position without termination.
-            if finished:
+            if finished or truncated:
                 break
 
         return episode_hist, finished
