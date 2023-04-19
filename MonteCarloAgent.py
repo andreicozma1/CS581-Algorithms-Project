@@ -336,6 +336,7 @@ def main():
                 test_every=args.test_every,
                 n_test_episodes=args.n_test_episodes,
                 max_steps=args.max_steps,
+                update_type=args.update_type,
                 log_wandb=args.wandb_project is not None,
             )
             if not args.no_save:
