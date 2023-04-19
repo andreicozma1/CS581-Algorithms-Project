@@ -6,7 +6,7 @@ num_tests = 10
 
 update_types = ["first_visit", "every_visit"]
 vals_eps = [0.1, 0.25, 0.5, 0.75, 0.9]
-vals_gamma = [1.0, 0.98, 0.95, 0.92, 0.9]
+vals_gamma = [1.0, 0.99, 0.98, 0.97, 0.96, 0.95]
 
 
 def run_test(args):
@@ -15,7 +15,7 @@ def run_test(args):
     )
 
 
-with multiprocessing.Pool(16) as p:
+with multiprocessing.Pool(8) as p:
     tests = []
     for update_type in update_types:
         for gamma in vals_gamma:
