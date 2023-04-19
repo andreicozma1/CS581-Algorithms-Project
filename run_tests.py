@@ -13,7 +13,7 @@ def run_test(args):
     )
 
 
-with multiprocessing.Pool(8) as p:
+with multiprocessing.Pool(16) as p:
     tests = []
     for gamma in vals_gamma:
         for eps in vals_eps:

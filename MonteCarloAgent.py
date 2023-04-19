@@ -45,7 +45,7 @@ class MonteCarloAgent:
         # Sample an action from the policy
         return np.random.choice(self.n_actions, p=self.Pi[state])
 
-    def run_episode(self, max_steps=250, **kwargs):
+    def run_episode(self, max_steps=500, **kwargs):
         state, _ = self.env.reset()
         episode_hist = []
         finished = False
@@ -65,7 +65,7 @@ class MonteCarloAgent:
 
         return episode_hist, finished
 
-    def update(self, episode_hist):
+    def update_first_visit(self, episode_hist):
         G = 0
         # For each step of the episode, in reverse order
         for t in range(len(episode_hist) - 1, -1, -1):
@@ -83,6 +83,24 @@ class MonteCarloAgent:
                 self.Pi[state, np.argmax(self.Q[state])] = (
                     1 - self.epsilon + self.epsilon / self.n_actions
                 )
+
+    def update_every_visit(self, episode_hist):
+        G = 0
+        # For each step of the episode, in reverse order
+        for t in range(len(episode_hist) - 1, -1, -1):
+            state, action, reward = episode_hist[t]
+            # Update the expected return
+            G = self.gamma * G + reward
+            # We update the Q-table and policy even if we have visited this state-action pair before
+            # This is the every-visit MC method
+            self.R[state][action].append(G)
+            self.Q[state, action] = np.mean(self.R[state][action])
+            # Epsilon-greedy policy update
+            self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
+            # the greedy action is the one with the highest Q-value
+            self.Pi[state, np.argmax(self.Q[state])] = (
+                1 - self.epsilon + self.epsilon / self.n_actions
+            )
 
     def train(self, n_train_episodes=2000, test_every=100, log_wandb=False, **kwargs):
         print(f"Training agent for {n_train_episodes} episodes...")
@@ -104,7 +122,7 @@ class MonteCarloAgent:
             train_running_success_rate = (
                 0.99 * train_running_success_rate + 0.01 * finished
             )
-            self.update(episode_hist)
+            self.update_first_visit(episode_hist)
 
             stats = {
                 "train_running_success_rate": train_running_success_rate,
@@ -207,8 +225,16 @@ def main():
     parser.add_argument(
         "--max_steps",
         type=int,
-        default=250,
+        default=500,
         help="The maximum number of steps per episode before the episode is forced to end. (default: 500)",
+    )
+
+    parser.add_argument(
+        "--update_type",
+        type=str,
+        choices=["first-visit", "every-visit"],
+        default="first-visit",
+        help="The type of update to use. (default: first-visit)",
     )
 
     parser.add_argument(
@@ -227,7 +253,7 @@ def main():
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.5,
+        default=0.7,
         help="The value for the epsilon-greedy policy to use. (default: 0.1)",
     )
 
