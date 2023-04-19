@@ -178,7 +178,7 @@ def main():
     parser.add_argument(
         "--train",
         action="store_true",
-        help="Use this flag to train the agent. (default: False)",
+        help="Use this flag to train the agent.",
     )
     parser.add_argument(
         "--test",
@@ -190,26 +190,26 @@ def main():
         "--n_train_episodes",
         type=int,
         default=2000,
-        help="The number of episodes to train for.",
+        help="The number of episodes to train for. (default: 2000)",
     )
     parser.add_argument(
         "--n_test_episodes",
         type=int,
         default=100,
-        help="The number of episodes to test for.",
+        help="The number of episodes to test for. (default: 100)",
     )
     parser.add_argument(
         "--test_every",
         type=int,
         default=100,
-        help="During training, test the agent every n episodes.",
+        help="During training, test the agent every n episodes. (default: 100)",
     )
 
     parser.add_argument(
         "--max_steps",
         type=int,
         default=500,
-        help="The maximum number of steps per episode before the episode is forced to end.",
+        help="The maximum number of steps per episode before the episode is forced to end. (default: 500)",
     )
 
     ### Agent parameters
@@ -217,13 +217,13 @@ def main():
         "--gamma",
         type=float,
         default=0.99,
-        help="The value for the discount factor to use.",
+        help="The value for the discount factor to use. (default: 0.99)",
     )
     parser.add_argument(
         "--epsilon",
         type=float,
         default=0.1,
-        help="The value for the epsilon-greedy policy to use.",
+        help="The value for the epsilon-greedy policy to use. (default: 0.1)",
     )
 
     ### Environment parameters
@@ -231,19 +231,19 @@ def main():
         "--env",
         type=str,
         default="CliffWalking-v0",
-        help="The Gymnasium environment to use.",
+        help="The Gymnasium environment to use. (default: CliffWalking-v0)",
     )
     parser.add_argument(
         "--render_mode",
         type=str,
         default=None,
-        help="The render mode to use. By default, no rendering is done. To render the environment, set this to 'human'.",
+        help="Render mode passed to the gym.make() function. Use 'human' to render the environment. (default: None)",
     )
     parser.add_argument(
         "--wandb_project",
         type=str,
         default=None,
-        help="WandB project name for logging. If not provided, no logging is done.",
+        help="WandB project name for logging. If not provided, no logging is done. (default: None)",
     )
     parser.add_argument(
         "--wandb_group",
