@@ -9,9 +9,14 @@ num_tests = 25
 
 def run_test(args):
     os.system(
-        f"python3 MonteCarloAgent.py --train  --gamma {args[0]} --epsilon {args[1]} --wandb_project cs581 --wandb_job_type params"
+        f"python3 MonteCarloAgent.py --train  --gamma {args[0]} --epsilon {args[1]} --wandb_project cs581 --wandb_job_type params --wandb_run_name_suffix {args[2]}"
     )
 
 
 with multiprocessing.Pool(8) as p:
-    p.map(run_test, [(gamma, eps) for gamma in vals_gamma for eps in vals_eps])
+    # make all the tests
+    tests = []
+    for gamma in vals_gamma:
+        for eps in vals_eps:
+            tests.extend((gamma, eps, i) for i in range(num_tests))
+    p.map(run_test, tests)
