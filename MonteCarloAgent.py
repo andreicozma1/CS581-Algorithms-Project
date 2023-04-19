@@ -207,8 +207,14 @@ def main():
     parser.add_argument(
         "--max_steps",
         type=int,
-        default=500,
+        default=250,
         help="The maximum number of steps per episode before the episode is forced to end. (default: 500)",
+    )
+
+    parser.add_argument(
+        "--no_save",
+        action="store_true",
+        help="Use this flag to disable saving the policy.",
     )
 
     ### Agent parameters
@@ -221,7 +227,7 @@ def main():
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.1,
+        default=0.5,
         help="The value for the epsilon-greedy policy to use. (default: 0.1)",
     )
 
@@ -295,7 +301,8 @@ def main():
                 max_steps=args.max_steps,
                 log_wandb=args.wandb_project is not None,
             )
-            mca.save_policy(fname=f"policy_{run_name}.npy")
+            if not args.no_save:
+                mca.save_policy(fname=f"policy_{run_name}.npy")
         elif args.test is not None:
             if not args.test.endswith(".npy"):
                 args.test += ".npy"
