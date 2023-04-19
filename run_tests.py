@@ -11,7 +11,7 @@ vals_gamma = [1.0, 0.99, 0.98, 0.97, 0.95]
 
 def run_test(args):
     os.system(
-        f"python3 MonteCarloAgent.py --train  --gamma {args[0]} --epsilon {args[1]} --update_type{args[2]} --wandb_project cs581 --wandb_job_type params --wandb_run_name_suffix {args[3]} --no_save"
+        f"python3 MonteCarloAgent.py --train  --gamma {args[0]} --epsilon {args[1]} --update_type {args[2]} --wandb_project cs581 --wandb_job_type params --wandb_run_name_suffix {args[3]} --no_save"
     )
 
 
