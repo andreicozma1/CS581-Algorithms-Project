@@ -102,13 +102,24 @@ class MonteCarloAgent:
                 1 - self.epsilon + self.epsilon / self.n_actions
             )
 
-    def train(self, n_train_episodes=2000, test_every=100, log_wandb=False, **kwargs):
+    def train(
+        self,
+        n_train_episodes=2000,
+        test_every=100,
+        update_type="first_visit",
+        log_wandb=False,
+        **kwargs,
+    ):
         print(f"Training agent for {n_train_episodes} episodes...")
+
         train_running_success_rate, test_success_rate = 0.0, 0.0
         stats = {
             "train_running_success_rate": train_running_success_rate,
             "test_success_rate": test_success_rate,
         }
+
+        update_func = getattr(self, f"update_{update_type}")
+
         tqrange = tqdm(range(n_train_episodes))
         tqrange.set_description("Training")
 
@@ -122,7 +133,7 @@ class MonteCarloAgent:
             train_running_success_rate = (
                 0.99 * train_running_success_rate + 0.01 * finished
             )
-            self.update_first_visit(episode_hist)
+            update_func(episode_hist)
 
             stats = {
                 "train_running_success_rate": train_running_success_rate,
@@ -232,9 +243,9 @@ def main():
     parser.add_argument(
         "--update_type",
         type=str,
-        choices=["first-visit", "every-visit"],
-        default="first-visit",
-        help="The type of update to use. (default: first-visit)",
+        choices=["first_visit", "every_visit"],
+        default="first_visit",
+        help="The type of update to use. (default: first_visit)",
     )
 
     parser.add_argument(
