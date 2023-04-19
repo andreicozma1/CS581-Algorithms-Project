@@ -45,7 +45,7 @@ class MonteCarloAgent:
         # Sample an action from the policy
         return np.random.choice(self.n_actions, p=self.Pi[state])
 
-    def run_episode(self, max_steps=500, **kwargs):
+    def run_episode(self, max_steps=250, **kwargs):
         state, _ = self.env.reset()
         episode_hist = []
         finished = False
@@ -84,7 +84,7 @@ class MonteCarloAgent:
                     1 - self.epsilon + self.epsilon / self.n_actions
                 )
 
-    def train(self, n_train_episodes=2500, test_every=100, log_wandb=False, **kwargs):
+    def train(self, n_train_episodes=2000, test_every=100, log_wandb=False, **kwargs):
         print(f"Training agent for {n_train_episodes} episodes...")
         train_running_success_rate, test_success_rate = 0.0, 0.0
         stats = {
@@ -125,7 +125,7 @@ class MonteCarloAgent:
             if log_wandb:
                 wandb.log(stats)
 
-    def test(self, n_test_episodes=50, verbose=True, **kwargs):
+    def test(self, n_test_episodes=100, verbose=True, **kwargs):
         if verbose:
             print(f"Testing agent for {n_test_episodes} episodes...")
         num_successes = 0

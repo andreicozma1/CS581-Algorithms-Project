@@ -12,7 +12,9 @@ Evolution of Reinforcement Learning methods from pure Dynamic Programming-based 
 
 ## Monte-Carlo Agent
 
-The implementation of the epsilon-greedy Monte-Carlo agent for the [Cliff Walking](https://gymnasium.farama.org/environments/toy_text/cliff_walking/) toy environment as part of Gymnasium.
+The implementation of the Monte-Carlo agent for the [Cliff Walking](https://gymnasium.farama.org/environments/toy_text/cliff_walking/) toy environment.
+
+The agent starts with a randomly initialized epsilon-greedy policy, and uses the first-visit Monte-Carlo method to learn the optimal policy.
 
 ### Training
 

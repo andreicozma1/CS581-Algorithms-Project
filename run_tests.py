@@ -1,10 +1,10 @@
 import os
 import multiprocessing
-
-vals_eps = [0.1, 0.25, 0.5, 0.75, 0.9]
-vals_gamma = [1.0, 0.99, 0.98, 0.97, 0.95]
+import random
 
 num_tests = 10
+vals_eps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+vals_gamma = [1.0, 0.99, 0.98, 0.97, 0.95]
 
 
 def run_test(args):
@@ -14,9 +14,10 @@ def run_test(args):
 
 
 with multiprocessing.Pool(8) as p:
-    # make all the tests
     tests = []
     for gamma in vals_gamma:
         for eps in vals_eps:
             tests.extend((gamma, eps, i) for i in range(num_tests))
+    random.shuffle(tests)
+
     p.map(run_test, tests)
