@@ -195,13 +195,13 @@ def main():
     parser.add_argument(
         "--n_test_episodes",
         type=int,
-        default=250,
+        default=100,
         help="The number of episodes to test for.",
     )
     parser.add_argument(
         "--test_every",
         type=int,
-        default=250,
+        default=100,
         help="During training, test the agent every n episodes.",
     )
 
