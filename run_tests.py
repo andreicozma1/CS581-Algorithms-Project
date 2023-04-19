@@ -1,10 +1,10 @@
 import os
 import multiprocessing
 
-vals_eps = [0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01]
-vals_gamma = [1.0, 0.99, 0.98, 0.97, 0.95, 0.9, 0.8, 0.7, 0.5]
+vals_eps = [0.1, 0.25, 0.5, 0.75, 0.9]
+vals_gamma = [1.0, 0.97, 0.95, 0.9, 0.75, 0.5]
 
-num_tests = 25
+num_tests = 10
 
 
 def run_test(args):
