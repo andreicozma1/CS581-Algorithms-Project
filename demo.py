@@ -7,6 +7,9 @@ from MonteCarloAgent import MonteCarloAgent
 import scipy.ndimage
 import cv2
 
+default_n_test_episodes = 10
+default_max_steps = 500
+
 # For the dropdown list of policies
 policies_folder = "policies"
 try:
@@ -21,6 +24,14 @@ except FileNotFoundError:
 agent_map = {
     "MonteCarloAgent": MonteCarloAgent,
     # TODO: Add DP Agent
+}
+action_map = {
+    "CliffWalking-v0": {
+        0: "up",
+        1: "right",
+        2: "down",
+        3: "left",
+    },
 }
 
 # Global variables to allow changing it on the fly
@@ -64,15 +75,14 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
     agent = agent_map[agent_type](env_name, render_mode="rgb_array")
     agent.load_policy(policy_path)
+    env_action_map = action_map.get(env_name)
 
-    rgb_array = None
-    policy_viz = None
-    episode, step = 0, 0
-    state, action, reward = 0, 0, 0
+    solved, rgb_array, policy_viz = None, None, None
+    episode, step, state, action, reward = 0, 0, 0, 0, 0
     episodes_solved = 0
 
     def ep_str(episode):
-        return f"{episode + 1} / {n_test_episodes} ({(episode + 1) / n_test_episodes * 100:.2f}%)"
+        return f"{episode} / {n_test_episodes} ({(episode + 1) / n_test_episodes * 100:.2f}%)"
 
     def step_str(step):
         return f"{step + 1}"
@@ -85,9 +95,6 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
         ):
             while live_paused:
                 time.sleep(0.1)
-
-            if solved:
-                episodes_solved += 1
 
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
@@ -110,34 +117,58 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 1.0,
             )
 
-            text_offset = 15
             cv2.putText(
                 policy_viz,
                 str(action),
                 (
-                    int((action + 0.5) * viz_w // len(curr_policy) - text_offset),
-                    viz_h // 2 + text_offset,
+                    int((action + 0.5) * viz_w // len(curr_policy) - 8),
+                    viz_h // 2 - 10,
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1.5,
+                1.0,
                 1.0,
                 2,
                 cv2.LINE_AA,
             )
 
+            if env_action_map:
+                action_name = env_action_map.get(action, action)
+
+                cv2.putText(
+                    policy_viz,
+                    action_name,
+                    (
+                        int(
+                            (action + 0.5) * viz_w // len(curr_policy)
+                            - 5 * len(action_name)
+                        ),
+                        viz_h // 2 + 20,
+                    ),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    1.0,
+                    2,
+                    cv2.LINE_AA,
+                )
+
             print(
-                f"Episode: {ep_str(episode)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / render_fps:.2f}s)"
+                f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / render_fps:.2f}s)"
             )
 
             # Live-update the agent's epsilon value for demonstration purposes
             agent.epsilon = live_epsilon
-            yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode), ep_str(
-                episodes_solved
-            ), step_str(step), state, action, reward, "Running..."
+            yield agent_type, env_name, rgb_array, policy_viz, ep_str(
+                episode + 1
+            ), ep_str(episodes_solved), step_str(
+                step
+            ), state, action, reward, "Running..."
 
             time.sleep(1 / live_render_fps)
 
-    yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode), ep_str(
+        if solved:
+            episodes_solved += 1
+
+    yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode + 1), ep_str(
         episodes_solved
     ), step_str(step), state, action, reward, "Done!"
 
@@ -162,14 +193,14 @@ with gr.Blocks(title="CS581 Demo") as demo:
     with gr.Row():
         input_n_test_episodes = gr.components.Slider(
             minimum=1,
-            maximum=500,
-            value=500,
+            maximum=1000,
+            value=default_n_test_episodes,
             label="Number of episodes",
         )
         input_max_steps = gr.components.Slider(
             minimum=1,
-            maximum=500,
-            value=500,
+            maximum=1000,
+            value=default_max_steps,
             label="Max steps per episode",
         )
 
