@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import gymnasium as gym
 from tqdm import tqdm
@@ -8,6 +9,7 @@ import wandb
 
 class MonteCarloAgent:
     def __init__(self, env_name="CliffWalking-v0", gamma=0.99, epsilon=0.1, **kwargs):
+        print("=" * 80)
         print(f"# MonteCarloAgent - {env_name}")
         print(f"- epsilon: {epsilon}")
         print(f"- gamma: {gamma}")
@@ -45,25 +47,68 @@ class MonteCarloAgent:
         # Sample an action from the policy
         return np.random.choice(self.n_actions, p=self.Pi[state])
 
-    def run_episode(self, max_steps=500, **kwargs):
+    # def run_episode(self, max_steps=500, render=False, **kwargs):
+    #     state, _ = self.env.reset()
+    #     episode_hist, solved, rgb_array = [], False, None
+
+    #     # Generate an episode following the current policy
+    #     for _ in range(max_steps):
+    #         rgb_array = self.env.render() if render else None
+    #         # Sample an action from the policy
+    #         action = self.choose_action(state)
+    #         # Take the action and observe the reward and next state
+    #         next_state, reward, done, truncated, _ = self.env.step(action)
+    #         # Keeping track of the trajectory
+    #         episode_hist.append((state, action, reward))
+    #         state = next_state
+
+    #         # This is where the agent got to the goal.
+    #         # In the case in which agent jumped off the cliff, it is simply respawned at the start position without termination.
+    #         if done:
+    #             solved = True
+    #             break
+    #         if truncated:
+    #             break
+
+    #     rgb_array = self.env.render() if render else None
+
+    #     return episode_hist, solved, rgb_array
+
+    def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
-        episode_hist = []
-        finished = False
+        episode_hist, solved, rgb_array = [], False, None
+
         # Generate an episode following the current policy
         for _ in range(max_steps):
+            rgb_array = self.env.render() if render else None
             # Sample an action from the policy
             action = self.choose_action(state)
             # Take the action and observe the reward and next state
-            next_state, reward, finished, truncated, _ = self.env.step(action)
+            next_state, reward, done, truncated, _ = self.env.step(action)
             # Keeping track of the trajectory
             episode_hist.append((state, action, reward))
             state = next_state
+
+            yield episode_hist, solved, rgb_array
+
             # This is where the agent got to the goal.
             # In the case in which agent jumped off the cliff, it is simply respawned at the start position without termination.
-            if finished or truncated:
+            if done or truncated:
+                solved = True
                 break
 
-        return episode_hist, finished
+        rgb_array = self.env.render() if render else None
+
+        yield episode_hist, solved, rgb_array
+
+    def run_episode(self, max_steps=500, render=False, **kwargs):
+        # Run the generator until the end
+        episode_hist, solved, rgb_array = None, False, None
+        for episode_hist, solved, rgb_array in self.generate_episode(
+            max_steps, render, **kwargs
+        ):
+            pass
+        return episode_hist, solved, rgb_array
 
     def update_first_visit(self, episode_hist):
         G = 0
@@ -127,11 +172,11 @@ class MonteCarloAgent:
             self.wandb_log_img(episode=None)
 
         for e in tqrange:
-            episode_hist, finished = self.run_episode(**kwargs)
+            episode_hist, solved, _ = self.run_episode(**kwargs)
             rewards = [x[2] for x in episode_hist]
             total_reward, avg_reward = sum(rewards), np.mean(rewards)
             train_running_success_rate = (
-                0.99 * train_running_success_rate + 0.01 * finished
+                0.99 * train_running_success_rate + 0.01 * solved
             )
             update_func(episode_hist)
 
@@ -159,11 +204,11 @@ class MonteCarloAgent:
             print(f"Testing agent for {n_test_episodes} episodes...")
         num_successes = 0
         for e in range(n_test_episodes):
-            _, finished = self.run_episode(**kwargs)
-            num_successes += finished
+            _, solved, _ = self.run_episode(**kwargs)
+            num_successes += solved
             if verbose:
-                word = "reached" if finished else "did not reach"
-                emoji = "🏁" if finished else "🚫"
+                word = "reached" if solved else "did not reach"
+                emoji = "🏁" if solved else "🚫"
                 print(
                     f"({e + 1:>{len(str(n_test_episodes))}}/{n_test_episodes}) - Agent {word} the goal {emoji}"
                 )
@@ -175,15 +220,18 @@ class MonteCarloAgent:
             )
         return success_rate
 
-    def save_policy(self, fname="policy.npy"):
-        print(f"Saving policy to {fname}")
+    def save_policy(self, fname="policy.npy", save_dir=None):
+        if save_dir is not None:
+            os.makedirs(save_dir, exist_ok=True)
+            fname = os.path.join(save_dir, fname)
+        print(f"Saving policy to: {fname}")
         np.save(fname, self.Pi)
 
     def load_policy(self, fname="policy.npy"):
-        print(f"Loading policy from {fname}")
+        print(f"Loading policy from: {fname}")
         self.Pi = np.load(fname)
 
-    def wandb_log_img(self, episode=None, mask=None):
+    def wandb_log_img(self, episode=None):
         caption_suffix = "Initial" if episode is None else f"After Episode {episode}"
         wandb.log(
             {
@@ -249,6 +297,13 @@ def main():
     )
 
     parser.add_argument(
+        "--save_dir",
+        type=str,
+        default="policies",
+        help="The directory to save the policy to. (default: policies)",
+    )
+
+    parser.add_argument(
         "--no_save",
         action="store_true",
         help="Use this flag to disable saving the policy.",
@@ -264,7 +319,7 @@ def main():
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.7,
+        default=0.5,
         help="The value for the epsilon-greedy policy to use. (default: 0.1)",
     )
 
@@ -308,14 +363,14 @@ def main():
 
     args = parser.parse_args()
 
-    mca = MonteCarloAgent(
+    agent = MonteCarloAgent(
         args.env,
         gamma=args.gamma,
         epsilon=args.epsilon,
         render_mode=args.render_mode,
     )
 
-    run_name = f"mc_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}"
+    run_name = f"{agent.__class__.__name__}_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}"
     if args.wandb_run_name_suffix is not None:
         run_name += f"+{args.wandb_run_name_suffix}"
 
@@ -331,7 +386,7 @@ def main():
                     config=dict(args._get_kwargs()),
                 )
 
-            mca.train(
+            agent.train(
                 n_train_episodes=args.n_train_episodes,
                 test_every=args.test_every,
                 n_test_episodes=args.n_test_episodes,
@@ -340,12 +395,15 @@ def main():
                 log_wandb=args.wandb_project is not None,
             )
             if not args.no_save:
-                mca.save_policy(fname=f"policy_{run_name}.npy")
+                agent.save_policy(
+                    fname=f"{run_name}.npy",
+                    save_dir=args.save_dir,
+                )
         elif args.test is not None:
             if not args.test.endswith(".npy"):
                 args.test += ".npy"
-            mca.load_policy(args.test)
-            mca.test(
+            agent.load_policy(args.test)
+            agent.test(
                 n_test_episodes=args.n_test_episodes,
                 max_steps=args.max_steps,
             )

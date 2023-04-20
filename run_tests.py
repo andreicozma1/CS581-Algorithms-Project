@@ -2,7 +2,7 @@ import os
 import multiprocessing
 import random
 
-num_tests = 10
+num_tests = 5
 
 update_types = ["first_visit", "every_visit"]
 vals_eps = [0.1, 0.25, 0.5, 0.75, 0.9]
