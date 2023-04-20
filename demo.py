@@ -5,6 +5,7 @@ import numpy as np
 import gradio as gr
 from MonteCarloAgent import MonteCarloAgent
 import scipy.ndimage
+import cv2
 
 # For the dropdown list of policies
 policies_folder = "policies"
@@ -90,7 +91,8 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            viz_w, viz_h = 128, 16
+            viz_w = 512
+            viz_h = viz_w // len(curr_policy)
             policy_viz = np.zeros((viz_h, viz_w))
             for i, p in enumerate(curr_policy):
                 policy_viz[
@@ -99,6 +101,22 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     * (viz_w // len(curr_policy)) : (i + 1)
                     * (viz_w // len(curr_policy)),
                 ] = p
+
+            policy_viz = np.stack([policy_viz] * 3, axis=-1)
+            text_offset = 15
+            cv2.putText(
+                policy_viz,
+                str(action),
+                (
+                    int((action + 0.5) * viz_w // len(curr_policy) - text_offset),
+                    viz_h // 2 + text_offset,
+                ),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.5,
+                (255, 255, 255),
+                1,
+                cv2.LINE_AA,
+            )
 
             policy_viz = scipy.ndimage.gaussian_filter(policy_viz, sigma=1)
             policy_viz = np.clip(
@@ -152,9 +170,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
             label="Max steps per episode",
         )
 
-    btn_run = gr.components.Button(
-        "▶️ Start", interactive=True if all_policies else False
-    )
+    btn_run = gr.components.Button("▶️ Start", interactive=bool(all_policies))
 
     gr.components.HTML("<h2>Live Statistics & Policy Visualization:</h2>")
     with gr.Row():
@@ -196,7 +212,6 @@ with gr.Blocks(title="CS581 Demo") as demo:
     )
 
     with gr.Row():
-        # Pause/resume button
         btn_pause = gr.components.Button("⏸️ Pause", interactive=True)
         btn_pause.click(
             fn=change_paused,
