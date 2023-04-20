@@ -43,36 +43,18 @@ class MonteCarloAgent:
         print(self.Pi)
         print("=" * 80)
 
-    def choose_action(self, state):
-        # Sample an action from the policy
-        return np.random.choice(self.n_actions, p=self.Pi[state])
+    def choose_action(self, state, override_epsilon=False, **kwargs):
+        # Sample an action from the policy.
+        # The override_epsilon argument allows forcing the use of a possibly new self.epsilon value than the one used during training.
+        # The ability to override was mostly added for testing purposes and for the demo.
 
-    # def run_episode(self, max_steps=500, render=False, **kwargs):
-    #     state, _ = self.env.reset()
-    #     episode_hist, solved, rgb_array = [], False, None
+        if override_epsilon is False:
+            return np.random.choice(self.n_actions, p=self.Pi[state])
 
-    #     # Generate an episode following the current policy
-    #     for _ in range(max_steps):
-    #         rgb_array = self.env.render() if render else None
-    #         # Sample an action from the policy
-    #         action = self.choose_action(state)
-    #         # Take the action and observe the reward and next state
-    #         next_state, reward, done, truncated, _ = self.env.step(action)
-    #         # Keeping track of the trajectory
-    #         episode_hist.append((state, action, reward))
-    #         state = next_state
-
-    #         # This is where the agent got to the goal.
-    #         # In the case in which agent jumped off the cliff, it is simply respawned at the start position without termination.
-    #         if done:
-    #             solved = True
-    #             break
-    #         if truncated:
-    #             break
-
-    #     rgb_array = self.env.render() if render else None
-
-    #     return episode_hist, solved, rgb_array
+        return np.random.choice(
+            [np.argmax(self.Pi[state]), np.random.randint(self.n_actions)],
+            p=[1 - self.epsilon, self.epsilon],
+        )
 
     def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
@@ -82,7 +64,7 @@ class MonteCarloAgent:
         for _ in range(max_steps):
             rgb_array = self.env.render() if render else None
             # Sample an action from the policy
-            action = self.choose_action(state)
+            action = self.choose_action(state, **kwargs)
             # Take the action and observe the reward and next state
             next_state, reward, done, truncated, _ = self.env.step(action)
             # Keeping track of the trajectory
@@ -319,7 +301,7 @@ def main():
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.5,
+        default=0.1,
         help="The value for the epsilon-greedy policy to use. (default: 0.1)",
     )
 
