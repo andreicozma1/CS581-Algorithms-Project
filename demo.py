@@ -1,6 +1,5 @@
 import os
 import time
-from matplotlib import interactive
 import numpy as np
 import gradio as gr
 from MonteCarloAgent import MonteCarloAgent
@@ -35,9 +34,10 @@ action_map = {
 }
 
 # Global variables to allow changing it on the fly
-live_render_fps = 10
+live_render_fps = 5
 live_epsilon = 0.0
 live_paused = False
+live_steps_forward = None
 
 
 def change_render_fps(x):
@@ -54,23 +54,44 @@ def change_epsilon(x):
 
 def change_paused(x):
     print("Changing paused:", x)
+    val_map = {
+        "▶️ Resume": False,
+        "⏸️ Pause": True,
+    }
+    val_map_inv = {v: k for k, v in val_map.items()}
     global live_paused
-    live_paused = x
-    # change the text to resume
-    return gr.update(value="▶️ Resume" if x else "⏸️ Pause")
+    live_paused = val_map[x]
+    next_val = val_map_inv[not live_paused]
+    return gr.update(value=next_val), gr.update(interactive=live_paused)
+
+
+def onclick_btn_forward():
+    print("Step forward")
+    global live_steps_forward
+    if live_steps_forward is None:
+        live_steps_forward = 0
+    live_steps_forward += 1
 
 
 def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
-    global live_render_fps, live_epsilon
+    global live_render_fps, live_epsilon, live_paused, live_steps_forward
     live_render_fps = render_fps
     live_epsilon = epsilon
+    print("=" * 80)
     print("Running...")
+    print(f"- policy_fname: {policy_fname}")
     print(f"- n_test_episodes: {n_test_episodes}")
     print(f"- max_steps: {max_steps}")
     print(f"- render_fps: {live_render_fps}")
+    print(f"- epsilon: {live_epsilon}")
 
     policy_path = os.path.join(policies_folder, policy_fname)
     props = policy_fname.split("_")
+
+    if len(props) < 2:
+        yield None, None, None, None, None, None, None, None, None, None, "🚫 Please select a valid policy file."
+        return
+
     agent_type, env_name = props[0], props[1]
 
     agent = agent_map[agent_type](env_name, render_mode="rgb_array")
@@ -82,7 +103,9 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
     episodes_solved = 0
 
     def ep_str(episode):
-        return f"{episode} / {n_test_episodes} ({(episode + 1) / n_test_episodes * 100:.2f}%)"
+        return (
+            f"{episode} / {n_test_episodes} ({(episode) / n_test_episodes * 100:.2f}%)"
+        )
 
     def step_str(step):
         return f"{step + 1}"
@@ -93,8 +116,13 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 max_steps=max_steps, render=True, override_epsilon=True
             )
         ):
-            while live_paused:
-                time.sleep(0.1)
+            if live_steps_forward is not None:
+                if live_steps_forward > 0:
+                    live_steps_forward -= 1
+
+                if live_steps_forward == 0:
+                    live_steps_forward = None
+                    live_paused = True
 
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
@@ -164,6 +192,14 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             ), state, action, reward, "Running..."
 
             time.sleep(1 / live_render_fps)
+
+            while live_paused and live_steps_forward is None:
+                yield agent_type, env_name, rgb_array, policy_viz, ep_str(
+                    episode + 1
+                ), ep_str(episodes_solved), step_str(
+                    step
+                ), state, action, reward, "Paused..."
+                time.sleep(1 / live_render_fps)
 
         if solved:
             episodes_solved += 1
@@ -247,16 +283,22 @@ with gr.Blocks(title="CS581 Demo") as demo:
 
     with gr.Row():
         btn_pause = gr.components.Button("⏸️ Pause", interactive=True)
+        btn_forward = gr.components.Button("⏩ Step", interactive=False)
+
         btn_pause.click(
             fn=change_paused,
             inputs=[btn_pause],
-            outputs=[btn_pause],
+            outputs=[btn_pause, btn_forward],
+        )
+
+        btn_forward.click(
+            fn=onclick_btn_forward,
         )
 
     out_msg = gr.components.Textbox(
         value=""
         if all_policies
-        else "<h2>🚫 ERROR: No policies found! Please train an agent first or add a policy to the policies folder.<h2>",
+        else "ERROR: No policies found! Please train an agent first or add a policy to the policies folder.",
         label="Status Message",
     )
 
@@ -284,5 +326,5 @@ with gr.Blocks(title="CS581 Demo") as demo:
         ],
     )
 
-demo.queue(concurrency_count=3)
+demo.queue(concurrency_count=2)
 demo.launch()
