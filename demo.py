@@ -33,10 +33,17 @@ action_map = {
     },
 }
 
+
+pause_val_map = {
+    "▶️ Resume": False,
+    "⏸️ Pause": True,
+}
+pause_val_map_inv = {v: k for k, v in pause_val_map.items()}
+
 # Global variables to allow changing it on the fly
 live_render_fps = 5
 live_epsilon = 0.0
-live_paused = False
+live_paused = True
 live_steps_forward = None
 
 
@@ -54,14 +61,10 @@ def change_epsilon(x):
 
 def change_paused(x):
     print("Changing paused:", x)
-    val_map = {
-        "▶️ Resume": False,
-        "⏸️ Pause": True,
-    }
-    val_map_inv = {v: k for k, v in val_map.items()}
+
     global live_paused
-    live_paused = val_map[x]
-    next_val = val_map_inv[not live_paused]
+    live_paused = pause_val_map[x]
+    next_val = pause_val_map_inv[not live_paused]
     return gr.update(value=next_val), gr.update(interactive=live_paused)
 
 
@@ -77,6 +80,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
     global live_render_fps, live_epsilon, live_paused, live_steps_forward
     live_render_fps = render_fps
     live_epsilon = epsilon
+    live_steps_forward = None
     print("=" * 80)
     print("Running...")
     print(f"- policy_fname: {policy_fname}")
@@ -123,14 +127,6 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 max_steps=max_steps, render=True, override_epsilon=True
             )
         ):
-            if live_steps_forward is not None:
-                if live_steps_forward > 0:
-                    live_steps_forward -= 1
-
-                if live_steps_forward == 0:
-                    live_steps_forward = None
-                    live_paused = True
-
             _, _, last_reward = (
                 episode_hist[-2] if len(episode_hist) > 1 else (None, None, None)
             )
@@ -201,7 +197,15 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 step
             ), state, action, last_reward, "Running..."
 
-            time.sleep(1 / live_render_fps)
+            if live_steps_forward is not None:
+                if live_steps_forward > 0:
+                    live_steps_forward -= 1
+
+                if live_steps_forward == 0:
+                    live_steps_forward = None
+                    live_paused = True
+            else:
+                time.sleep(1 / live_render_fps)
 
             while live_paused and live_steps_forward is None:
                 yield agent_type, env_name, rgb_array, policy_viz, ep_str(
@@ -250,7 +254,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
             label="Max steps per episode",
         )
 
-    btn_run = gr.components.Button("▶️ Start", interactive=bool(all_policies))
+    btn_run = gr.components.Button("👀 Select", interactive=bool(all_policies))
 
     gr.components.HTML("<h2>Live Statistics & Policy Visualization:</h2>")
     with gr.Row():
@@ -292,7 +296,9 @@ with gr.Blocks(title="CS581 Demo") as demo:
     )
 
     with gr.Row():
-        btn_pause = gr.components.Button("⏸️ Pause", interactive=True)
+        btn_pause = gr.components.Button(
+            pause_val_map_inv[not live_paused], interactive=True
+        )
         btn_forward = gr.components.Button("⏩ Step", interactive=False)
 
         btn_pause.click(
