@@ -99,7 +99,14 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
     env_action_map = action_map.get(env_name)
 
     solved, rgb_array, policy_viz = None, None, None
-    episode, step, state, action, reward = 0, 0, 0, 0, 0
+    episode, step, state, action, reward, last_reward = (
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
     episodes_solved = 0
 
     def ep_str(episode):
@@ -124,6 +131,9 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     live_steps_forward = None
                     live_paused = True
 
+            _, _, last_reward = (
+                episode_hist[-2] if len(episode_hist) > 1 else (None, None, None)
+            )
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
@@ -189,7 +199,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 episode + 1
             ), ep_str(episodes_solved), step_str(
                 step
-            ), state, action, reward, "Running..."
+            ), state, action, last_reward, "Running..."
 
             time.sleep(1 / live_render_fps)
 
@@ -198,7 +208,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     episode + 1
                 ), ep_str(episodes_solved), step_str(
                     step
-                ), state, action, reward, "Paused..."
+                ), state, action, last_reward, "Paused..."
                 time.sleep(1 / live_render_fps)
 
         if solved:
@@ -253,11 +263,11 @@ with gr.Blocks(title="CS581 Demo") as demo:
             with gr.Row():
                 out_state = gr.components.Textbox(label="Current State")
                 out_action = gr.components.Textbox(label="Chosen Action")
-                out_reward = gr.components.Textbox(label="Reward Received")
+                out_reward = gr.components.Textbox(label="Last Reward")
 
         out_image_policy = gr.components.Image(
             value=np.ones((16, 128)),
-            label="policy[state]",
+            label="Action Sampled vs Policy Distribution for Current State",
             type="numpy",
             image_mode="RGB",
         )
