@@ -88,6 +88,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
             if solved:
                 episodes_solved += 1
+
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
@@ -102,7 +103,13 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     * (viz_w // len(curr_policy)),
                 ] = p
 
-            policy_viz = np.stack([policy_viz] * 3, axis=-1)
+            policy_viz = scipy.ndimage.gaussian_filter(policy_viz, sigma=1.0)
+            policy_viz = np.clip(
+                policy_viz * (1.0 - live_epsilon) + live_epsilon / len(curr_policy),
+                0.0,
+                1.0,
+            )
+
             text_offset = 15
             cv2.putText(
                 policy_viz,
@@ -113,26 +120,22 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1.5,
-                (255, 255, 255),
-                1,
+                1.0,
+                2,
                 cv2.LINE_AA,
             )
 
-            policy_viz = scipy.ndimage.gaussian_filter(policy_viz, sigma=1)
-            policy_viz = np.clip(
-                policy_viz * (1 - live_epsilon) + live_epsilon / len(curr_policy), 0, 1
-            )
-
             print(
-                f"Episode: {ep_str(episode)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (frame time: {1 / render_fps:.2f}s)"
+                f"Episode: {ep_str(episode)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / render_fps:.2f}s)"
             )
 
-            time.sleep(1 / live_render_fps)
             # Live-update the agent's epsilon value for demonstration purposes
             agent.epsilon = live_epsilon
             yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode), ep_str(
                 episodes_solved
             ), step_str(step), state, action, reward, "Running..."
+
+            time.sleep(1 / live_render_fps)
 
     yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode), ep_str(
         episodes_solved
