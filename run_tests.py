@@ -2,10 +2,10 @@ import os
 import multiprocessing
 import random
 
-num_tests = 5
+num_tests = 25
 
 update_types = ["first_visit", "every_visit"]
-vals_eps = [0.1, 0.25, 0.5, 0.75, 0.9]
+vals_eps = [0.1, 0.2, 0.3, 0.4, 0.5]
 vals_gamma = [1.0, 0.99, 0.98, 0.97, 0.96, 0.95]
 
 
