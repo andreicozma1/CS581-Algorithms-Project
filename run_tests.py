@@ -2,7 +2,7 @@ import os
 import multiprocessing
 import random
 
-num_tests = 25
+num_tests = 10
 
 update_types = ["first_visit", "every_visit"]
 vals_eps = [0.1, 0.2, 0.3, 0.4, 0.5]
@@ -15,7 +15,7 @@ def run_test(args):
     )
 
 
-with multiprocessing.Pool(8) as p:
+with multiprocessing.Pool(12) as p:
     tests = []
     for update_type in update_types:
         for gamma in vals_gamma:
