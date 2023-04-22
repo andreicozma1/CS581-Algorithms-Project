@@ -53,7 +53,7 @@ pause_val_map = {
 pause_val_map_inv = {v: k for k, v in pause_val_map.items()}
 
 # Global variables to allow changing it on the fly
-is_running = False
+current_policy = None
 live_render_fps = default_render_fps
 live_epsilon = default_epsilon
 live_paused = default_paused
@@ -61,9 +61,9 @@ live_steps_forward = None
 should_reset = False
 
 
-def reset():
-    global is_running, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
-    if is_running:
+def reset(policy_fname):
+    global current_policy, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
+    if current_policy is not None and current_policy != policy_fname:
         should_reset = True
     live_paused = default_paused
     live_render_fps = default_render_fps
@@ -104,8 +104,8 @@ def onclick_btn_forward():
 
 
 def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
-    global is_running, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
-    is_running = True
+    global current_policy, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
+    current_policy = policy_fname
     live_render_fps = render_fps
     live_epsilon = epsilon
     live_steps_forward = None
@@ -290,7 +290,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
         time.sleep(0.25)
 
-    is_running = False
+    current_policy = None
     yield agent_type, env_name, frame_env, frame_policy, ep_str(episode + 1), ep_str(
         episodes_solved
     ), step_str(step), state, action, reward, "Done!"
@@ -326,7 +326,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
             label="Max steps per episode",
         )
 
-    btn_run = gr.components.Button("👀 Select", interactive=bool(all_policies))
+    btn_run = gr.components.Button("👀 Select & Load", interactive=bool(all_policies))
 
     gr.components.HTML("<h2>Live Visualization & Information:</h2>")
     with gr.Row():
@@ -392,7 +392,9 @@ with gr.Blocks(title="CS581 Demo") as demo:
         label="Status Message",
     )
 
-    input_policy.change(fn=reset, outputs=[btn_pause, btn_forward])
+    input_policy.change(
+        fn=reset, inputs=[input_policy], outputs=[btn_pause, btn_forward]
+    )
 
     btn_run.click(
         fn=run,
