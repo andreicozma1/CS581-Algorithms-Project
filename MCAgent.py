@@ -6,16 +6,8 @@ from Shared import Shared
 
 class MCAgent(Shared):
     
-    def __init__(
-        self,
-        /,
-        env="CliffWalking-v0",
-        gamma=0.99,
-        epsilon=0.1,
-        run_name=None,
-        **kwargs,
-    ):
-        super().__init__(env, gamma, epsilon, run_name, **kwargs)
+    def __init__(self, /, **kwargs):
+        super().__init__(**kwargs)
         self.reset()
 
     def reset(self):
