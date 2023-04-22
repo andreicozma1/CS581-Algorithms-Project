@@ -15,7 +15,7 @@ default_epsilon = 0.0
 default_paused = True
 
 frame_env_h, frame_env_w = 512, 768
-frame_policy_res = 384
+frame_policy_res = 256
 
 # For the dropdown list of policies
 policies_folder = "policies"
@@ -51,75 +51,80 @@ pause_val_map = {
 pause_val_map_inv = {v: k for k, v in pause_val_map.items()}
 
 # Global variables to allow changing it on the fly
-current_policy = None
-live_render_fps = default_render_fps
-live_epsilon = default_epsilon
-live_paused = default_paused
-live_steps_forward = None
-should_reset = False
 
 
-def reset(policy_fname):
-    global current_policy, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
-    if current_policy is not None and current_policy != policy_fname:
-        should_reset = True
-    live_paused = default_paused
-    live_render_fps = default_render_fps
-    live_epsilon = default_epsilon
-    live_steps_forward = None
-    return gr.update(value=pause_val_map_inv[not live_paused]), gr.update(
-        interactive=live_paused
+class RunState:
+    def __init__(self) -> None:
+        self.current_policy = None
+        self.live_render_fps = default_render_fps
+        self.live_epsilon = default_epsilon
+        self.live_paused = default_paused
+        self.live_steps_forward = None
+        self.should_reset = False
+
+
+def reset(state, policy_fname):
+    if state.current_policy is not None and state.current_policy != policy_fname:
+        state.should_reset = True
+    state.live_paused = default_paused
+    state.live_render_fps = default_render_fps
+    state.live_epsilon = default_epsilon
+    state.live_steps_forward = None
+    return gr.update(value=pause_val_map_inv[not state.live_paused]), gr.update(
+        interactive=state.live_paused
     )
 
 
-def change_render_fps(x):
+def change_render_fps(state, x):
     print("Changing render fps:", x)
-    global live_render_fps
-    live_render_fps = x
+    state.live_render_fps = x
+    return state
 
 
-def change_epsilon(x):
+def change_epsilon(state, x):
     print("Changing greediness:", x)
-    global live_epsilon
-    live_epsilon = x
+    state.live_epsilon = x
+    return state
 
 
-def change_paused(x):
+def change_paused(state, x):
     print("Changing paused:", x)
-    global live_paused
-    live_paused = pause_val_map[x]
-    return gr.update(value=pause_val_map_inv[not live_paused]), gr.update(
-        interactive=live_paused
+    state.live_paused = pause_val_map[x]
+    return (
+        state,
+        gr.update(value=pause_val_map_inv[not state.live_paused]),
+        gr.update(interactive=state.live_paused),
     )
 
 
-def onclick_btn_forward():
+def onclick_btn_forward(state):
     print("Step forward")
-    global live_steps_forward
-    if live_steps_forward is None:
-        live_steps_forward = 0
-    live_steps_forward += 1
+    if state.live_steps_forward is None:
+        state.live_steps_forward = 0
+    state.live_steps_forward += 1
+    return state
 
 
-def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
-    global current_policy, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
-    current_policy = policy_fname
-    live_render_fps = render_fps
-    live_epsilon = epsilon
-    live_steps_forward = None
+def run(
+    localstate: RunState, policy_fname, n_test_episodes, max_steps, render_fps, epsilon
+):
+    localstate.current_policy = policy_fname
+    localstate.live_render_fps = render_fps
+    localstate.live_epsilon = epsilon
+    localstate.live_steps_forward = None
     print("=" * 80)
     print("Running...")
-    print(f"- policy_fname: {policy_fname}")
+    print(f"- policy_fname: {localstate.current_policy}")
     print(f"- n_test_episodes: {n_test_episodes}")
     print(f"- max_steps: {max_steps}")
-    print(f"- render_fps: {live_render_fps}")
-    print(f"- epsilon: {live_epsilon}")
+    print(f"- render_fps: {localstate.live_render_fps}")
+    print(f"- epsilon: {localstate.live_steps_forward}")
 
     policy_path = os.path.join(policies_folder, policy_fname)
     props = policy_fname.split("_")
 
     if len(props) < 2:
-        yield None, None, None, None, None, None, None, None, None, None, "🚫 Please select a valid policy file."
+        yield localstate, None, None, None, None, None, None, None, None, None, None, "🚫 Please select a valid policy file."
         return
 
     agent_type, env_name = props[0], props[1]
@@ -152,7 +157,9 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
         for step, (episode_hist, solved, frame_env) in enumerate(
             agent.generate_episode(
-                max_steps=max_steps, render=True, epsilon_override=live_epsilon
+                max_steps=max_steps,
+                render=True,
+                epsilon_override=localstate.live_epsilon,
             )
         ):
             _, _, last_reward = (
@@ -173,26 +180,34 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
             frame_policy = scipy.ndimage.gaussian_filter(frame_policy, sigma=1.0)
             frame_policy = np.clip(
-                frame_policy * (1.0 - live_epsilon) + live_epsilon / len(curr_policy),
+                frame_policy * (1.0 - localstate.live_epsilon)
+                + localstate.live_epsilon / len(curr_policy),
                 0.0,
                 1.0,
             )
-            
-            label_loc_h, label_loc_w  =frame_policy_h // 2, int((action + 0.5) * frame_policy_res // len(curr_policy))
-            
+
+            label_loc_h, label_loc_w = frame_policy_h // 2, int(
+                (action + 0.5) * frame_policy_res // len(curr_policy)
+            )
+
             frame_policy_label_color = 1.0 - frame_policy[label_loc_h, label_loc_w]
             frame_policy_label_font = cv2.FONT_HERSHEY_SIMPLEX
             frame_policy_label_thicc = 1
-            action_text_scale, action_text_label_scale = 0.8, 0.5
-            
-            (label_width, _), _ = cv2.getTextSize(str(action), frame_policy_label_font, action_text_scale, frame_policy_label_thicc)
+            action_text_scale, action_text_label_scale = 0.6, 0.3
+
+            (label_width, label_height), _ = cv2.getTextSize(
+                str(action),
+                frame_policy_label_font,
+                action_text_scale,
+                frame_policy_label_thicc,
+            )
 
             cv2.putText(
                 frame_policy,
                 str(action),
                 (
                     label_loc_w - label_width // 2,
-                    label_loc_h,
+                    label_loc_h + label_height // 2,
                 ),
                 frame_policy_label_font,
                 action_text_scale,
@@ -203,14 +218,21 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
             if env_action_map:
                 action_name = env_action_map.get(action, "")
-                (label_width, _), _ = cv2.getTextSize(action_name, frame_policy_label_font, action_text_label_scale, frame_policy_label_thicc)
-                
+                (label_width, label_height), _ = cv2.getTextSize(
+                    action_name,
+                    frame_policy_label_font,
+                    action_text_label_scale,
+                    frame_policy_label_thicc,
+                )
+
                 cv2.putText(
                     frame_policy,
                     action_name,
                     (
                         int(label_loc_w - label_width / 2),
-                        label_loc_h + 25,
+                        frame_policy_h
+                        - (frame_policy_h - label_loc_h) // 2
+                        + label_height // 2,
                     ),
                     frame_policy_label_font,
                     action_text_label_scale,
@@ -220,38 +242,39 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 )
 
             print(
-                f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / live_render_fps:.2f}s)"
+                f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {localstate.live_epsilon:.2f}) (frame time: {1 / localstate.live_render_fps:.2f}s)"
             )
 
-            yield agent_type, env_name, frame_env, frame_policy, ep_str(
+            yield localstate, agent_type, env_name, frame_env, frame_policy, ep_str(
                 episode + 1
             ), ep_str(episodes_solved), step_str(
                 step
             ), state, action, last_reward, "Running..."
 
-            if live_steps_forward is not None:
-                if live_steps_forward > 0:
-                    live_steps_forward -= 1
+            if localstate.live_steps_forward is not None:
+                if localstate.live_steps_forward > 0:
+                    localstate.live_steps_forward -= 1
 
-                if live_steps_forward == 0:
-                    live_steps_forward = None
-                    live_paused = True
+                if localstate.live_steps_forward == 0:
+                    localstate.live_steps_forward = None
+                    localstate.live_paused = True
             else:
-                time.sleep(1 / live_render_fps)
+                time.sleep(1 / localstate.live_render_fps)
 
-            while live_paused and live_steps_forward is None:
-                yield agent_type, env_name, frame_env, frame_policy, ep_str(
+            while localstate.live_paused and localstate.live_steps_forward is None:
+                yield localstate, agent_type, env_name, frame_env, frame_policy, ep_str(
                     episode + 1
                 ), ep_str(episodes_solved), step_str(
                     step
                 ), state, action, last_reward, "Paused..."
-                time.sleep(1 / live_render_fps)
-                if should_reset is True:
+                time.sleep(1 / localstate.live_render_fps)
+                if localstate.should_reset is True:
                     break
 
-            if should_reset is True:
-                should_reset = False
+            if localstate.should_reset is True:
+                localstate.should_reset = False
                 yield (
+                    localstate,
                     agent_type,
                     env_name,
                     np.ones((frame_env_h, frame_env_w, 3)),
@@ -271,16 +294,18 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
         time.sleep(0.25)
 
-    current_policy = None
-    yield agent_type, env_name, frame_env, frame_policy, ep_str(episode + 1), ep_str(
-        episodes_solved
-    ), step_str(step), state, action, reward, "Done!"
+    localstate.current_policy = None
+    yield localstate, agent_type, env_name, frame_env, frame_policy, ep_str(
+        episode + 1
+    ), ep_str(episodes_solved), step_str(step), state, action, reward, "Done!"
 
 
 with gr.Blocks(title="CS581 Demo") as demo:
     gr.components.HTML(
         "<h1>CS581 Final Project Demo - Dynamic Programming & Monte-Carlo RL Methods (<a href='https://huggingface.co/spaces/acozma/CS581-Algos-Demo'>HF Space</a>)</h1>"
     )
+
+    localstate = gr.State(RunState())
 
     gr.components.HTML("<h2>Select Configuration:</h2>")
     with gr.Row():
@@ -333,17 +358,26 @@ with gr.Blocks(title="CS581 Demo") as demo:
         input_epsilon = gr.components.Slider(
             minimum=0,
             maximum=1,
-            value=live_epsilon,
-            step=1/200,
+            value=default_epsilon,
+            step=1 / 200,
             label="Epsilon (0 = greedy, 1 = random)",
         )
-        input_epsilon.change(change_epsilon, inputs=[input_epsilon])
+        input_epsilon.change(
+            change_epsilon, inputs=[localstate, input_epsilon], outputs=[localstate]
+        )
 
         input_render_fps = gr.components.Slider(
-            minimum=1, maximum=60, value=live_render_fps, step=1,
-            label="Simulation speed (fps)"
+            minimum=1,
+            maximum=60,
+            value=default_render_fps,
+            step=1,
+            label="Simulation speed (fps)",
         )
-        input_render_fps.change(change_render_fps, inputs=[input_render_fps])
+        input_render_fps.change(
+            change_render_fps,
+            inputs=[localstate, input_render_fps],
+            outputs=[localstate],
+        )
 
     out_image_frame = gr.components.Image(
         label="Environment",
@@ -354,18 +388,18 @@ with gr.Blocks(title="CS581 Demo") as demo:
 
     with gr.Row():
         btn_pause = gr.components.Button(
-            pause_val_map_inv[not live_paused], interactive=True
+            pause_val_map_inv[not default_paused], interactive=True
         )
         btn_forward = gr.components.Button("⏩ Step")
 
         btn_pause.click(
             fn=change_paused,
-            inputs=[btn_pause],
-            outputs=[btn_pause, btn_forward],
+            inputs=[localstate, btn_pause],
+            outputs=[localstate, btn_pause, btn_forward],
         )
 
         btn_forward.click(
-            fn=onclick_btn_forward,
+            fn=onclick_btn_forward, inputs=[localstate], outputs=[localstate]
         )
 
     out_msg = gr.components.Textbox(
@@ -376,12 +410,15 @@ with gr.Blocks(title="CS581 Demo") as demo:
     )
 
     input_policy.change(
-        fn=reset, inputs=[input_policy], outputs=[btn_pause, btn_forward]
+        fn=reset,
+        inputs=[localstate, input_policy],
+        outputs=[localstate, btn_pause, btn_forward],
     )
 
     btn_run.click(
         fn=run,
         inputs=[
+            localstate,
             input_policy,
             input_n_test_episodes,
             input_max_steps,
@@ -389,6 +426,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
             input_epsilon,
         ],
         outputs=[
+            localstate,
             out_agent,
             out_environment,
             out_image_frame,
