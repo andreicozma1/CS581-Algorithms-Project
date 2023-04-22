@@ -71,7 +71,7 @@ Parameter testing results:
 - `run_tests_MC_FrozenLake-v1.sh` (n_train_episodes=10000 and max_steps=200)
   - Best Update Type: first_visit
   - Best Gamma: 1.0
-  - Best Epsilon: 0.5 (testing) and 0.2 (training)
+  - Best Epsilon: 0.4
 
 ```bash
 # Training: Policy will be saved as a `.npy` file.
