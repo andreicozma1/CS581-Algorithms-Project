@@ -398,5 +398,5 @@ with gr.Blocks(title="CS581 Demo") as demo:
         ],
     )
 
-demo.queue(concurrency_count=2)
+demo.queue(concurrency_count=3)
 demo.launch()
