@@ -8,6 +8,7 @@ class MCAgent(Shared):
     
     def __init__(
         self,
+        /,
         env_name="CliffWalking-v0",
         gamma=0.99,
         epsilon=0.1,

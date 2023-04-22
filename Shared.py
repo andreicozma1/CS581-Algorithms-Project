@@ -8,7 +8,7 @@ import wandb
 class Shared:
     
     def __init__(
-        self,
+        self,/,
         env_name="CliffWalking-v0",
         gamma=0.99,
         epsilon=0.1,
@@ -24,7 +24,7 @@ class Shared:
         self.env_name = env_name
         self.epsilon, self.gamma = epsilon, gamma
 
-        self.env_kwargs = kwargs
+        self.env_kwargs = {k:v for k,v in kwargs.items() if k in ['render_mode']}
         if self.env_name == "FrozenLake-v1":
             # Can use defaults by defining map_name (4x4 or 8x8) or custom map by defining desc
             # self.env_kwargs["map_name"] = "8x8"

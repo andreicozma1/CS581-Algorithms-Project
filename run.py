@@ -5,7 +5,6 @@ from agents import AGENTS_MAP
 
 def main():
     parser = argparse.ArgumentParser()
-
     ### Train/Test parameters
     parser.add_argument(
         "--train",
@@ -77,7 +76,7 @@ def main():
     parser.add_argument(
         "--gamma",
         type=float,
-        default=1.0,
+        default=0.99,
         help="The value for the discount factor to use. (default: 1.0)",
     )
     parser.add_argument(
@@ -128,13 +127,8 @@ def main():
     )
 
     args = parser.parse_args()
-    
-    agent = AGENTS_MAP[args.agent](
-        args.env,
-        gamma=args.gamma,
-        epsilon=args.epsilon,
-        render_mode=args.render_mode,
-    )
+    print(vars(args))
+    agent = AGENTS_MAP[args.agent](**dict(args._get_kwargs()))
 
     run_name = f"{agent.__class__.__name__}_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}_{args.update_type}"
     if args.wandb_run_name_suffix is not None:
