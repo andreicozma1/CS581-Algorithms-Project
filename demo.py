@@ -134,6 +134,8 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
         return f"{step + 1}"
 
     for episode in range(n_test_episodes):
+        time.sleep(1.0)
+
         for step, (episode_hist, solved, rgb_array) in enumerate(
             agent.generate_episode(
                 max_steps=max_steps, render=True, epsilon_override=live_epsilon
@@ -145,7 +147,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            rgb_array_height, rgb_array_width = 128, 512
+            rgb_array_height, rgb_array_width = 150, 512
             rgb_array = cv2.resize(
                 rgb_array,
                 (
@@ -202,7 +204,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             )
 
             if env_action_map:
-                action_name = env_action_map.get(action, action)
+                action_name = env_action_map.get(action, "")
 
                 cv2.putText(
                     policy_viz,
@@ -222,7 +224,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 )
 
             print(
-                f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / render_fps:.2f}s)"
+                f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / live_render_fps:.2f}s)"
             )
 
             yield agent_type, env_name, rgb_array, policy_viz, ep_str(
@@ -396,5 +398,5 @@ with gr.Blocks(title="CS581 Demo") as demo:
         ],
     )
 
-demo.queue(concurrency_count=3)
+demo.queue(concurrency_count=2)
 demo.launch()

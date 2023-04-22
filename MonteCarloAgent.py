@@ -27,9 +27,18 @@ class MonteCarloAgent:
 
         self.env_kwargs = kwargs
         if self.env_name == "FrozenLake-v1":
-            self.env_kwargs["desc"] = None
-            self.env_kwargs["map_name"] = "4x4"
-            self.env_kwargs["is_slippery"] = "False"
+            self.env_kwargs["desc"] = [
+                "SFFFFFFF",
+                "FFFFFFFH",
+                "FFFHFFFF",
+                "FFFFFHFF",
+                "FFFHFFFF",
+                "FHHFFFHF",
+                "FHFFHFHF",
+                "FFFHFFFG",
+            ]
+            # self.env_kwargs["map_name"] = "8x8"
+            self.env_kwargs["is_slippery"] = False
 
         self.env = gym.make(self.env_name, **self.env_kwargs)
 
@@ -67,7 +76,7 @@ class MonteCarloAgent:
         # The ability to override was mostly added for testing purposes and for the demo.
         greedy_action = np.argmax(self.Pi[state])
 
-        if greedy:
+        if greedy or epsilon_override == 0:
             return greedy_action
 
         if epsilon_override is None:
@@ -80,21 +89,30 @@ class MonteCarloAgent:
 
     def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
-        episode_hist, solved, rgb_array = [], False, None
+        episode_hist, solved, rgb_array = (
+            [],
+            False,
+            self.env.render() if render else None,
+        )
 
         # Generate an episode following the current policy
-        while len(episode_hist) < max_steps:
-            rgb_array = self.env.render() if render else None
-
+        for _ in range(max_steps):
             # Sample an action from the policy
             action = self.choose_action(state, **kwargs)
             # Take the action and observe the reward and next state
-            next_state, reward, done, truncated, _ = self.env.step(action)
+            next_state, reward, done, _, _ = self.env.step(action)
+
+            if self.env_name == "FrozenLake-v1":
+                if done:
+                    reward = 100 if reward == 1 else -10
+                else:
+                    reward = -1
 
             # Keeping track of the trajectory
             episode_hist.append((state, action, reward))
             yield episode_hist, solved, rgb_array
 
+            rgb_array = self.env.render() if render else None
             # For CliffWalking-v0 and Taxi-v3, the episode is solved when it terminates
             if done and (
                 self.env_name == "CliffWalking-v0" or self.env_name == "Taxi-v3"
@@ -103,12 +121,17 @@ class MonteCarloAgent:
                 break
 
             # For FrozenLake-v1, the episode terminates when the agent moves into a hole or reaches the goal
-            # We consider the episode solved when the agent reaches the goal (done == True and reward == 1)
-            if done and self.env_name == "FrozenLake-v1" and reward == 1:
-                solved = True
-                break
+            # We consider the episode solved when the agent reaches the goal
+            if done and self.env_name == "FrozenLake-v1":
+                if next_state == self.env.nrow * self.env.ncol - 1:
+                    solved = True
+                    # print("Solved!")
+                    break
+                else:
+                    done = False
+                    next_state, _ = self.env.reset()
 
-            if done or truncated:
+            if solved or done:
                 break
 
             state = next_state
