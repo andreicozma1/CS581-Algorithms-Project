@@ -3,15 +3,14 @@ import numpy as np
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 from matplotlib import pyplot as plt
 from tqdm import trange
+from Shared import Shared
 
 
-class DPAgent:
-    def __init__(self, env_name, gamma=0.9, theta=1e-10, **kwargs):
-        self.env = gym.make(env_name, **kwargs)
-        self.gamma = gamma
+class DPAgent(Shared):
+    def __init__(self, theta=1e-10, **kwargs):
+        super().__init__(**kwargs)
         self.theta = theta
         self.V = np.zeros(self.env.observation_space.n)
-        self.epsilon = 0
         self.Pi = None
 
     def policy(self, state):
@@ -39,7 +38,7 @@ class DPAgent:
             if delta < self.theta:
                 break
             i += 1
-            # self.test()
+            self.test()
             print(f"Iteration {i}: delta={delta}")
             # break
 
@@ -52,35 +51,9 @@ class DPAgent:
                     # if state == self.env.observation_space.n-1: reward = 1
                     expected_value += probability * (reward + self.gamma * self.V[next_state])
                 self.Pi[s,a] = expected_value
+        self.Pi = np.argmax(self.Pi, axis=1)
+        print(self.Pi)
         # return self.V, self.Pi
-
-    def generate_episode(self, max_steps, render=False, **kwargs):
-        state, _ = self.env.reset()
-        episode_hist, solved, rgb_array = [], False, None
-
-        # Generate an episode following the current policy
-        for _ in range(max_steps):
-            rgb_array = self.env.render() if render else None
-            # Sample an action from the policy
-            action = self.policy(state)
-            maction = np.argmax(action)
-            # Take the action and observe the reward and next state
-            next_state, reward, done, truncated, _ = self.env.step(maction)
-            # Keeping track of the trajectory
-            episode_hist.append((state, maction, reward))
-            state = next_state
-
-            yield episode_hist, solved, rgb_array
-
-            # This is where the agent got to the goal.
-            # In the case in which agent jumped off the cliff, it is simply respawned at the start position without termination.
-            if done or truncated:
-                solved = True
-                break
-
-        rgb_array = self.env.render() if render else None
-
-        yield episode_hist, solved, rgb_array
 
 
 if __name__ == "__main__":

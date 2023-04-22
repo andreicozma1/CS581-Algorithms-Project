@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from Shared import Shared
 import wandb
+from Shared import Shared
 
 class MCAgent(Shared):
     
