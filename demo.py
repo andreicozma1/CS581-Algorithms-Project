@@ -146,7 +146,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            rgb_array_height, rgb_array_width = 384, 768
+            rgb_array_height, rgb_array_width = 512, 768
             rgb_array = cv2.resize(
                 rgb_array,
                 (
@@ -171,7 +171,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 )
                 rgb_array = np.uint8(rgb_array_new)
 
-            viz_w = 512
+            viz_w = 384
             viz_h = viz_w // len(curr_policy)
             policy_viz = np.zeros((viz_h, viz_w))
             for i, p in enumerate(curr_policy):
