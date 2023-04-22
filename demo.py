@@ -342,10 +342,11 @@ with gr.Blocks(title="CS581 Demo") as demo:
                 out_reward = gr.components.Textbox(label="Last Reward")
 
         out_image_policy = gr.components.Image(
-            value=np.ones((16, 128)),
             label="Action Sampled vs Policy Distribution for Current State",
             type="numpy",
             image_mode="RGB",
+            value=np.ones((16, frame_policy_w)),
+            shape=(16, frame_policy_w),
         )
 
     with gr.Row():
@@ -367,6 +368,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
         type="numpy",
         image_mode="RGB",
         value=np.ones((frame_env_h, frame_env_w, 3)),
+        shape=(frame_env_h, frame_env_w),
     )
 
     with gr.Row():
