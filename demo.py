@@ -347,7 +347,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
         input_render_fps.change(change_render_fps, inputs=[input_render_fps])
 
     out_image_frame = gr.components.Image(
-        label="Environment", type="numpy", image_mode="RGB"
+        label="Environment", type="numpy", image_mode="RGB", shape=(384, 768)
     )
 
     with gr.Row():
