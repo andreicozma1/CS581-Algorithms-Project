@@ -8,8 +8,11 @@ import cv2
 
 default_n_test_episodes = 10
 default_max_steps = 500
+default_render_fps = 5
+default_epsilon = 0.0
+default_paused = True
 
-frame_env_h, frame_env_w = 256, 512
+frame_env_h, frame_env_w = 256, 768
 frame_policy_w = 384
 
 # For the dropdown list of policies
@@ -50,16 +53,25 @@ pause_val_map = {
 pause_val_map_inv = {v: k for k, v in pause_val_map.items()}
 
 # Global variables to allow changing it on the fly
-live_render_fps = 5
-live_epsilon = 0.0
-live_paused = True
+is_running = False
+live_render_fps = default_render_fps
+live_epsilon = default_epsilon
+live_paused = default_paused
 live_steps_forward = None
 should_reset = False
 
 
-# def reset():
-#     global should_reset
-#     should_reset = True
+def reset():
+    global is_running, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
+    if is_running:
+        should_reset = True
+    live_paused = default_paused
+    live_render_fps = default_render_fps
+    live_epsilon = default_epsilon
+    live_steps_forward = None
+    return gr.update(value=pause_val_map_inv[not live_paused]), gr.update(
+        interactive=live_paused
+    )
 
 
 def change_render_fps(x):
@@ -78,8 +90,9 @@ def change_paused(x):
     print("Changing paused:", x)
     global live_paused
     live_paused = pause_val_map[x]
-    next_val = pause_val_map_inv[not live_paused]
-    return gr.update(value=next_val), gr.update(interactive=live_paused)
+    return gr.update(value=pause_val_map_inv[not live_paused]), gr.update(
+        interactive=live_paused
+    )
 
 
 def onclick_btn_forward():
@@ -91,7 +104,8 @@ def onclick_btn_forward():
 
 
 def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
-    global live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
+    global is_running, live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
+    is_running = True
     live_render_fps = render_fps
     live_epsilon = epsilon
     live_steps_forward = None
@@ -116,7 +130,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
     agent.load_policy(policy_path)
     env_action_map = action_map.get(env_name)
 
-    solved, rgb_array, policy_viz = None, None, None
+    solved, frame_env, frame_policy = None, None, None
     episode, step, state, action, reward, last_reward = (
         None,
         None,
@@ -136,9 +150,9 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
         return f"{step + 1}"
 
     for episode in range(n_test_episodes):
-        time.sleep(0.5)
+        time.sleep(0.25)
 
-        for step, (episode_hist, solved, rgb_array) in enumerate(
+        for step, (episode_hist, solved, frame_env) in enumerate(
             agent.generate_episode(
                 max_steps=max_steps, render=True, epsilon_override=live_epsilon
             )
@@ -149,58 +163,58 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            # rgb_array = cv2.resize(
-            #     rgb_array,
-            #     (
-            #         int(rgb_array.shape[1] / rgb_array.shape[0] * frame_env_h),
-            #         frame_env_h,
-            #     ),
-            #     interpolation=cv2.INTER_AREA,
-            # )
+            frame_env = cv2.resize(
+                frame_env,
+                (
+                    int(frame_env.shape[1] / frame_env.shape[0] * frame_env_h),
+                    frame_env_h,
+                ),
+                interpolation=cv2.INTER_AREA,
+            )
 
-            # if rgb_array.shape[1] < frame_env_w:
-            #     rgb_array_new = np.pad(
-            #         rgb_array,
-            #         (
-            #             (0, 0),
-            #             (
-            #                 (frame_env_w - rgb_array.shape[1]) // 2,
-            #                 (frame_env_w - rgb_array.shape[1]) // 2,
-            #             ),
-            #             (0, 0),
-            #         ),
-            #         "constant",
-            #     )
-            #     rgb_array = np.uint8(rgb_array_new)
+            if frame_env.shape[1] < frame_env_w:
+                rgb_array_new = np.pad(
+                    frame_env,
+                    (
+                        (0, 0),
+                        (
+                            (frame_env_w - frame_env.shape[1]) // 2,
+                            (frame_env_w - frame_env.shape[1]) // 2,
+                        ),
+                        (0, 0),
+                    ),
+                    "constant",
+                )
+                frame_env = np.uint8(rgb_array_new)
 
-            viz_h = frame_policy_w // len(curr_policy)
-            policy_viz = np.zeros((viz_h, frame_policy_w))
+            frame_policy_h = frame_policy_w // len(curr_policy)
+            frame_policy = np.zeros((frame_policy_h, frame_policy_w))
             for i, p in enumerate(curr_policy):
-                policy_viz[
+                frame_policy[
                     :,
                     i
                     * (frame_policy_w // len(curr_policy)) : (i + 1)
                     * (frame_policy_w // len(curr_policy)),
                 ] = p
 
-            policy_viz = scipy.ndimage.gaussian_filter(policy_viz, sigma=1.0)
-            policy_viz = np.clip(
-                policy_viz * (1.0 - live_epsilon) + live_epsilon / len(curr_policy),
+            frame_policy = scipy.ndimage.gaussian_filter(frame_policy, sigma=1.0)
+            frame_policy = np.clip(
+                frame_policy * (1.0 - live_epsilon) + live_epsilon / len(curr_policy),
                 0.0,
                 1.0,
             )
 
             cv2.putText(
-                policy_viz,
+                frame_policy,
                 str(action),
                 (
                     int((action + 0.5) * frame_policy_w // len(curr_policy) - 8),
-                    viz_h // 2,
+                    frame_policy_h // 2 - 5,
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
                 1.0,
-                1.0,
-                2,
+                1,
                 cv2.LINE_AA,
             )
 
@@ -208,19 +222,19 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 action_name = env_action_map.get(action, "")
 
                 cv2.putText(
-                    policy_viz,
+                    frame_policy,
                     action_name,
                     (
                         int(
                             (action + 0.5) * frame_policy_w // len(curr_policy)
                             - 5 * len(action_name)
                         ),
-                        viz_h // 2 + 30,
+                        frame_policy_h // 2 + 25,
                     ),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
+                    0.5,
                     1.0,
-                    2,
+                    1,
                     cv2.LINE_AA,
                 )
 
@@ -228,7 +242,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / live_render_fps:.2f}s)"
             )
 
-            yield agent_type, env_name, rgb_array, policy_viz, ep_str(
+            yield agent_type, env_name, frame_env, frame_policy, ep_str(
                 episode + 1
             ), ep_str(episodes_solved), step_str(
                 step
@@ -245,37 +259,39 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 time.sleep(1 / live_render_fps)
 
             while live_paused and live_steps_forward is None:
-                yield agent_type, env_name, rgb_array, policy_viz, ep_str(
+                yield agent_type, env_name, frame_env, frame_policy, ep_str(
                     episode + 1
                 ), ep_str(episodes_solved), step_str(
                     step
                 ), state, action, last_reward, "Paused..."
                 time.sleep(1 / live_render_fps)
-            #     if should_reset is True:
-            #         break
+                if should_reset is True:
+                    break
 
-            # if should_reset is True:
-            #     should_reset = False
-            #     return (
-            #         agent_type,
-            #         env_name,
-            #         rgb_array,
-            #         policy_viz,
-            #         ep_str(episode + 1),
-            #         ep_str(episodes_solved),
-            #         step_str(step),
-            #         state,
-            #         action,
-            #         last_reward,
-            #         "Resetting...",
-            #     )
+            if should_reset is True:
+                should_reset = False
+                yield (
+                    agent_type,
+                    env_name,
+                    np.ones((frame_env_h, frame_env_w, 3)),
+                    np.ones((frame_policy_h, frame_policy_w)),
+                    ep_str(episode + 1),
+                    ep_str(episodes_solved),
+                    step_str(step),
+                    state,
+                    action,
+                    last_reward,
+                    "Reset...",
+                )
+                return
 
         if solved:
             episodes_solved += 1
 
-        time.sleep(0.5)
+        time.sleep(0.25)
 
-    yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode + 1), ep_str(
+    is_running = False
+    yield agent_type, env_name, frame_env, frame_policy, ep_str(episode + 1), ep_str(
         episodes_solved
     ), step_str(step), state, action, reward, "Done!"
 
@@ -376,7 +392,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
         label="Status Message",
     )
 
-    # input_policy.change(fn=reset)
+    input_policy.change(fn=reset, outputs=[btn_pause, btn_forward])
 
     btn_run.click(
         fn=run,

@@ -5,8 +5,8 @@ colorFrom: yellow
 colorTo: orange
 sdk: gradio
 app_file: demo.py
+fullWidth: true
 pinned: true
-
 ---
 
 # CS581 Project - Reinforcement Learning: From Dynamic Programming to Monte-Carlo
