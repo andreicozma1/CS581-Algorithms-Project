@@ -84,15 +84,17 @@ class DP:
 
 
 if __name__ == "__main__":
-    env = gym.make('CliffWalking-v0', render_mode='human')
-    dp = DP(env)
+    # env = gym.make('FrozenLake-v1', render_mode='human')
+    dp = DP("FrozenLake-v1")
     dp.train()
     dp.save_policy('dp_policy.npy')
+    env = gym.make('FrozenLake-v1', render_mode='human')
 
     state, _ = env.reset()
     done = False
     while not done:
         action = dp.policy(state)
+        action = np.argmax(action)
         state, reward, done, _, _ = env.step(action)
         env.render()
 
