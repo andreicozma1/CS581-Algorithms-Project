@@ -85,10 +85,28 @@ class DP:
 
 if __name__ == "__main__":
     # env = gym.make('FrozenLake-v1', render_mode='human')
-    dp = DP("FrozenLake-v1")
+    dp = DP("FrozenLake-v1", is_slippery=False, desc=[
+        "SFFFFFFF",
+        "FFFFFFFH",
+        "FFFHFFFF",
+        "FFFFFHFF",
+        "FFFHFFFF",
+        "FHHFFFHF",
+        "FHFFHFHF",
+        "FFFHFFFG",
+    ])
     dp.train()
     dp.save_policy('dp_policy.npy')
-    env = gym.make('FrozenLake-v1', render_mode='human')
+    env = gym.make('FrozenLake-v1', render_mode='human', is_slippery=False, desc=[
+        "SFFFFFFF",
+        "FFFFFFFH",
+        "FFFHFFFF",
+        "FFFFFHFF",
+        "FFFHFFFF",
+        "FHHFFFHF",
+        "FHFFHFHF",
+        "FFFHFFFG",
+    ])
 
     state, _ = env.reset()
     done = False
