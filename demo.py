@@ -359,7 +359,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
             minimum=0,
             maximum=1,
             value=default_epsilon,
-            step=1 / 200,
+            step=1 / 50,
             label="Epsilon (0 = greedy, 1 = random)",
         )
         input_epsilon.change(
