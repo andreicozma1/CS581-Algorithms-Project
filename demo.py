@@ -178,40 +178,44 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 1.0,
             )
             
-            text_color = frame_policy[frame_policy_h // 2, int((action + 0.5) * frame_policy_res // len(curr_policy))]
-            text_color = 1.0 - text_color
+            label_loc_h, label_loc_w  =frame_policy_h // 2, int((action + 0.5) * frame_policy_res // len(curr_policy))
+            
+            frame_policy_label_color = 1.0 - frame_policy[label_loc_h, label_loc_w]
+            frame_policy_label_font = cv2.FONT_HERSHEY_SIMPLEX
+            frame_policy_label_thicc = 1
+            action_text_scale, action_text_label_scale = 0.8, 0.5
+            
+            (label_width, _), _ = cv2.getTextSize(str(action), frame_policy_label_font, action_text_scale, frame_policy_label_thicc)
 
             cv2.putText(
                 frame_policy,
                 str(action),
                 (
-                    int((action + 0.5) * frame_policy_res // len(curr_policy) - 8),
-                    frame_policy_h // 2 - 5,
+                    label_loc_w - label_width // 2,
+                    label_loc_h,
                 ),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                text_color,
-                1,
+                frame_policy_label_font,
+                action_text_scale,
+                frame_policy_label_color,
+                frame_policy_label_thicc,
                 cv2.LINE_AA,
             )
 
             if env_action_map:
                 action_name = env_action_map.get(action, "")
-
+                (label_width, _), _ = cv2.getTextSize(action_name, frame_policy_label_font, action_text_label_scale, frame_policy_label_thicc)
+                
                 cv2.putText(
                     frame_policy,
                     action_name,
                     (
-                        int(
-                            (action + 0.5) * frame_policy_res // len(curr_policy)
-                            - 5 * len(action_name)
-                        ),
-                        frame_policy_h // 2 + 25,
+                        int(label_loc_w - label_width / 2),
+                        label_loc_h + 25,
                     ),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    text_color,
-                    1,
+                    frame_policy_label_font,
+                    action_text_label_scale,
+                    frame_policy_label_color,
+                    frame_policy_label_thicc,
                     cv2.LINE_AA,
                 )
 
