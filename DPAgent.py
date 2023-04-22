@@ -16,6 +16,8 @@ class DPAgent(Shared):
         self.Pi = np.zeros(self.env.observation_space.n, self.env.action_space.n)
         if self.gamma >= 1.0:
             warnings.warn("DP will never converge with a gamma value =1.0. Try 0.99?", UserWarning)
+        print(self.env)
+        exit(1)
 
     def policy(self, state):
         return self.Pi[state]
@@ -32,7 +34,7 @@ class DPAgent(Shared):
                 for action in range(self.env.action_space.n):
                     expected_value = 0
                     for probability, next_state, reward, done in self.env.P[state][action]:
-                        if state == self.env.observation_space.n-1: reward = 1
+                        # if state == self.env.observation_space.n-1: reward = 1
                         expected_value += probability * (reward + self.gamma * self.V[next_state])
                     Q[action] = expected_value
                 action, value = np.argmax(Q), np.max(Q)
@@ -60,14 +62,13 @@ class DPAgent(Shared):
         print(idxs)
         self.Pi = np.zeros((self.env.observation_space.n,self.env.action_space.n))
         self.Pi[np.arange(self.env.observation_space.n),idxs] = 1
-
         # print(self.Pi)
         # return self.V, self.Pi
 
 
 if __name__ == "__main__":
     # env = gym.make('FrozenLake-v1', render_mode='human')
-    dp = DPAgent(env_name="FrozenLake-v1")
+    dp = DPAgent(env_name="FrozenLake-v1", gamma=0.99)
     dp.train()
     dp.save_policy('dp_policy.npy')
     env = gym.make('FrozenLake-v1', render_mode='human', is_slippery=False, desc=[
