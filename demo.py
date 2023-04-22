@@ -159,9 +159,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 episode_hist[-2] if len(episode_hist) > 1 else (None, None, None)
             )
             state, action, reward = episode_hist[-1]
-            curr_policy = agent.policy(state)
-            curr_policy -= np.min(curr_policy)
-            curr_policy = curr_policy / np.sum(curr_policy)
+            curr_policy = agent.Pi[state]
 
             frame_policy_h = frame_policy_res // len(curr_policy)
             frame_policy = np.zeros((frame_policy_h, frame_policy_res))
