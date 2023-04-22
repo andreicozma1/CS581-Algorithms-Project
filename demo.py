@@ -298,7 +298,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
 with gr.Blocks(title="CS581 Demo") as demo:
     gr.components.HTML(
-        "<h1>CS581 Final Project Demo - Dynamic Programming & Monte-Carlo RL Methods</h1>"
+        "<h1>CS581 Final Project Demo - Dynamic Programming & Monte-Carlo RL Methods (<a href='https://huggingface.co/spaces/acozma/CS581-Algos-Demo'>HF Space</a>)</h1>"
     )
 
     gr.components.HTML("<h2>Select Configuration:</h2>")

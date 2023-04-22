@@ -31,7 +31,9 @@ Install all the dependencies using `pip`:
 
 # 2. Interactive Demo
 
-Launch the Gradio demo web app:
+HuggingFace Space: [acozma/CS581-Algos-Demo](https://huggingface.co/spaces/acozma/CS581-Algos-Demo)
+
+Launch the Gradio demo web app locally:
 
 ```bash
 ❯ python3 demo.py
@@ -42,7 +44,7 @@ Running on local URL:  http://127.0.0.1:7860
 
 # 2. Agents
 
-## Dynamic-Programming Agent
+## 2.1. Dynamic-Programming Agent
 
 TODO
 
@@ -52,7 +54,7 @@ TODO
 TODO
 ```
 
-## Monte-Carlo Agent
+## 2.2. Monte-Carlo Agent
 
 This is the implementation of an On-Policy Monte-Carlo agent to solve several toy problems from the OpenAI Gymnasium.  
 
