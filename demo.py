@@ -177,6 +177,9 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 0.0,
                 1.0,
             )
+            
+            # text_color = frame_policy[int((action + 0.5) * frame_policy_res // len(curr_policy)), frame_policy_h // 2]
+            # text_color = 1.0 - text_color
 
             cv2.putText(
                 frame_policy,
@@ -394,5 +397,5 @@ with gr.Blocks(title="CS581 Demo") as demo:
         ],
     )
 
-demo.queue(concurrency_count=3)
+demo.queue(concurrency_count=2)
 demo.launch()
