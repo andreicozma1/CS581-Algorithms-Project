@@ -149,29 +149,29 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            rgb_array = cv2.resize(
-                rgb_array,
-                (
-                    int(rgb_array.shape[1] / rgb_array.shape[0] * frame_env_h),
-                    frame_env_h,
-                ),
-                interpolation=cv2.INTER_AREA,
-            )
+            # rgb_array = cv2.resize(
+            #     rgb_array,
+            #     (
+            #         int(rgb_array.shape[1] / rgb_array.shape[0] * frame_env_h),
+            #         frame_env_h,
+            #     ),
+            #     interpolation=cv2.INTER_AREA,
+            # )
 
-            if rgb_array.shape[1] < frame_env_w:
-                rgb_array_new = np.pad(
-                    rgb_array,
-                    (
-                        (0, 0),
-                        (
-                            (frame_env_w - rgb_array.shape[1]) // 2,
-                            (frame_env_w - rgb_array.shape[1]) // 2,
-                        ),
-                        (0, 0),
-                    ),
-                    "constant",
-                )
-                rgb_array = np.uint8(rgb_array_new)
+            # if rgb_array.shape[1] < frame_env_w:
+            #     rgb_array_new = np.pad(
+            #         rgb_array,
+            #         (
+            #             (0, 0),
+            #             (
+            #                 (frame_env_w - rgb_array.shape[1]) // 2,
+            #                 (frame_env_w - rgb_array.shape[1]) // 2,
+            #             ),
+            #             (0, 0),
+            #         ),
+            #         "constant",
+            #     )
+            #     rgb_array = np.uint8(rgb_array_new)
 
             viz_h = frame_policy_w // len(curr_policy)
             policy_viz = np.zeros((viz_h, frame_policy_w))
