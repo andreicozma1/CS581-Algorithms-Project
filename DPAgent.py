@@ -12,19 +12,10 @@ class DPAgent:
         self.theta = theta
         self.V = np.zeros(self.env.observation_space.n)
         self.epsilon = 0
+        self.Pi = None
 
-    def policy(self, state, return_value=False):
-        Q = np.zeros(self.env.action_space.n)
-        for action in range(self.env.action_space.n):
-            expected_value = 0
-            for probability, next_state, reward, done in self.env.P[state][action]:
-                if state == self.env.observation_space.n-1: reward = 1
-                expected_value += probability * (reward + self.gamma * self.V[next_state])
-            Q[action] = expected_value
-        if return_value:
-            return np.argmax(Q), np.max(Q)
-        else:
-            return Q
+    def policy(self, state):
+        return self.Pi[state]
 
     def train(self):
         i = 0
@@ -32,27 +23,36 @@ class DPAgent:
             delta = 0
             V_prev = np.copy(self.V)
             for state in range(self.env.observation_space.n):
-                action, value = self.policy(state, return_value=True)
+                # calculate the action-value for each possible action
+                Q = np.zeros(self.env.action_space.n)
+                for action in range(self.env.action_space.n):
+                    expected_value = 0
+                    for probability, next_state, reward, done in self.env.P[state][action]:
+                        if state == self.env.observation_space.n-1: reward = 1
+                        expected_value += probability * (reward + self.gamma * self.V[next_state])
+                    Q[action] = expected_value
+                action, value = np.argmax(Q), np.max(Q)
+
+                # update the state-value function
                 self.V[state] = value
                 delta = max(delta, abs(V_prev[state] - self.V[state]))
             if delta < self.theta:
                 break
             i += 1
+            # self.test()
             print(f"Iteration {i}: delta={delta}")
             # break
 
-        policy = [self.policy(state, return_value=True)[0] for state in range(self.env.observation_space.n)]
-        return self.V, policy
-    
-    def save_policy(self, pth):
-        np.save(pth, self.V)
-
-    def load_policy(self, pth):
-        """
-        not really loading the 'policy', but the state-value function but for
-        interface's sake, here we are. 
-        """
-        self.V = np.load(pth)
+        # policy = [self.policy(state, return_value=True)[0] for state in range(self.env.observation_space.n)]
+        self.Pi = np.empty((self.env.observation_space.n, self.env.action_space.n))
+        for s in range(self.env.observation_space.n):
+            for a in range(self.env.action_space.n):
+                expected_value = 0
+                for probability, next_state, reward, done in self.env.P[s][a]:
+                    # if state == self.env.observation_space.n-1: reward = 1
+                    expected_value += probability * (reward + self.gamma * self.V[next_state])
+                self.Pi[s,a] = expected_value
+        # return self.V, self.Pi
 
     def generate_episode(self, max_steps, render=False, **kwargs):
         state, _ = self.env.reset()
