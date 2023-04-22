@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from tqdm import trange
 
 
-class DP:
+class DPAgent:
     def __init__(self, env_name, gamma=0.9, theta=1e-10, **kwargs):
         self.env = gym.make(env_name, **kwargs)
         self.gamma = gamma
@@ -85,7 +85,7 @@ class DP:
 
 if __name__ == "__main__":
     # env = gym.make('FrozenLake-v1', render_mode='human')
-    dp = DP("FrozenLake-v1", is_slippery=False, desc=[
+    dp = DPAgent("FrozenLake-v1", is_slippery=False, desc=[
         "SFFFFFFF",
         "FFFFFFFH",
         "FFFHFFFF",

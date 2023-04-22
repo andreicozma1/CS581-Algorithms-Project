@@ -2,10 +2,11 @@ import os
 import time
 import numpy as np
 import gradio as gr
-from MonteCarloAgent import MonteCarloAgent
-from DPAgent import DP
+
 import scipy.ndimage
 import cv2
+
+from agents import AGENTS_MAP
 
 default_n_test_episodes = 10
 default_max_steps = 500
@@ -26,11 +27,7 @@ except FileNotFoundError:
     print("ERROR: No policies folder found!")
     all_policies = []
 
-# All supported agents
-agent_map = {
-    "MonteCarloAgent": MonteCarloAgent,
-    "DPAgent": DP
-}
+
 action_map = {
     "CliffWalking-v0": {
         0: "up",
@@ -127,7 +124,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
     agent_type, env_name = props[0], props[1]
 
-    agent = agent_map[agent_type](env_name, render_mode="rgb_array")
+    agent = AGENTS_MAP[agent_type](env_name, render_mode="rgb_array")
     agent.load_policy(policy_path)
     env_action_map = action_map.get(env_name)
 
@@ -165,30 +162,6 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             curr_policy = agent.policy(state)
             curr_policy -= np.min(curr_policy)
             curr_policy = curr_policy / np.sum(curr_policy)
-
-            # frame_env = cv2.resize(
-            #     frame_env,
-            #     (
-            #         int(frame_env.shape[1] / frame_env.shape[0] * frame_env_h),
-            #         frame_env_h,
-            #     ),
-            #     interpolation=cv2.INTER_AREA,
-            # )
-
-            # if frame_env.shape[1] < frame_env_w:
-            #     rgb_array_new = np.pad(
-            #         frame_env,
-            #         (
-            #             (0, 0),
-            #             (
-            #                 (frame_env_w - frame_env.shape[1]) // 2,
-            #                 (frame_env_w - frame_env.shape[1]) // 2,
-            #             ),
-            #             (0, 0),
-            #         ),
-            #         "constant",
-            #     )
-            #     frame_env = np.uint8(rgb_array_new)
 
             frame_policy_h = frame_policy_res // len(curr_policy)
             frame_policy = np.zeros((frame_policy_h, frame_policy_res))
