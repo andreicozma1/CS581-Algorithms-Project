@@ -36,7 +36,7 @@ class DPAgent(Shared):
                     for probability, next_state, reward, done in self.env.P[state][
                         action
                     ]:
-                        # if state == self.env.observation_space.n-1: reward = 1
+                        if state == self.env.observation_space.n-1: reward = 1
                         expected_value += probability * (
                             reward + self.gamma * self.V[next_state]
                         )
@@ -49,17 +49,16 @@ class DPAgent(Shared):
             if delta < self.theta:
                 break
             i += 1
-            # if i % 100 == 0 and i != 0:
-            #     self.test()
+            # if i % 5 == 0 and i != 0:
+            #     self.test(verbose=False)
             print(f"Iteration {i}: delta={delta}")
-            # break
-        # policy = [self.policy(state, return_value=True)[0] for state in range(self.env.observation_space.n)]
+        
         self.Pi = np.empty((self.env.observation_space.n, self.env.action_space.n))
         for s in range(self.env.observation_space.n):
             for a in range(self.env.action_space.n):
                 expected_value = 0
                 for probability, next_state, reward, done in self.env.P[s][a]:
-                    # if state == self.env.observation_space.n-1: reward = 1
+                    if state == self.env.observation_space.n-1: reward = 1
                     expected_value += probability * (
                         reward + self.gamma * self.V[next_state]
                     )
