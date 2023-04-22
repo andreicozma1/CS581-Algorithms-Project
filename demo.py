@@ -9,6 +9,9 @@ import cv2
 default_n_test_episodes = 10
 default_max_steps = 500
 
+frame_env_h, frame_env_w = 256, 512
+frame_policy_w = 384
+
 # For the dropdown list of policies
 policies_folder = "policies"
 try:
@@ -146,24 +149,23 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            rgb_array_height, rgb_array_width = 512, 768
             rgb_array = cv2.resize(
                 rgb_array,
                 (
-                    int(rgb_array.shape[1] / rgb_array.shape[0] * rgb_array_height),
-                    rgb_array_height,
+                    int(rgb_array.shape[1] / rgb_array.shape[0] * frame_env_h),
+                    frame_env_h,
                 ),
                 interpolation=cv2.INTER_AREA,
             )
 
-            if rgb_array.shape[1] < rgb_array_width:
+            if rgb_array.shape[1] < frame_env_w:
                 rgb_array_new = np.pad(
                     rgb_array,
                     (
                         (0, 0),
                         (
-                            (rgb_array_width - rgb_array.shape[1]) // 2,
-                            (rgb_array_width - rgb_array.shape[1]) // 2,
+                            (frame_env_w - rgb_array.shape[1]) // 2,
+                            (frame_env_w - rgb_array.shape[1]) // 2,
                         ),
                         (0, 0),
                     ),
@@ -171,15 +173,14 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 )
                 rgb_array = np.uint8(rgb_array_new)
 
-            viz_w = 384
-            viz_h = viz_w // len(curr_policy)
-            policy_viz = np.zeros((viz_h, viz_w))
+            viz_h = frame_policy_w // len(curr_policy)
+            policy_viz = np.zeros((viz_h, frame_policy_w))
             for i, p in enumerate(curr_policy):
                 policy_viz[
                     :,
                     i
-                    * (viz_w // len(curr_policy)) : (i + 1)
-                    * (viz_w // len(curr_policy)),
+                    * (frame_policy_w // len(curr_policy)) : (i + 1)
+                    * (frame_policy_w // len(curr_policy)),
                 ] = p
 
             policy_viz = scipy.ndimage.gaussian_filter(policy_viz, sigma=1.0)
@@ -193,8 +194,8 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 policy_viz,
                 str(action),
                 (
-                    int((action + 0.5) * viz_w // len(curr_policy) - 8),
-                    viz_h // 2 - 10,
+                    int((action + 0.5) * frame_policy_w // len(curr_policy) - 8),
+                    viz_h // 2,
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1.0,
@@ -211,10 +212,10 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     action_name,
                     (
                         int(
-                            (action + 0.5) * viz_w // len(curr_policy)
+                            (action + 0.5) * frame_policy_w // len(curr_policy)
                             - 5 * len(action_name)
                         ),
-                        viz_h // 2 + 20,
+                        viz_h // 2 + 30,
                     ),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6,
@@ -325,8 +326,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
                 out_reward = gr.components.Textbox(label="Last Reward")
 
         out_image_policy = gr.components.Image(
-            # value=np.ones((16, 128)),
-            # shape=(16, 128),
+            value=np.ones((16, 128)),
             label="Action Sampled vs Policy Distribution for Current State",
             type="numpy",
             image_mode="RGB",
@@ -347,7 +347,10 @@ with gr.Blocks(title="CS581 Demo") as demo:
         input_render_fps.change(change_render_fps, inputs=[input_render_fps])
 
     out_image_frame = gr.components.Image(
-        label="Environment", type="numpy", image_mode="RGB", shape=(512, 768)
+        label="Environment",
+        type="numpy",
+        image_mode="RGB",
+        value=np.ones((frame_env_h, frame_env_w, 3)),
     )
 
     with gr.Row():
