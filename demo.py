@@ -124,7 +124,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
     agent_type, env_name = props[0], props[1]
 
-    agent = AGENTS_MAP[agent_type](env_name, render_mode="rgb_array")
+    agent = AGENTS_MAP[agent_type](env_name=env_name, render_mode="rgb_array")
     agent.load_policy(policy_path)
     env_action_map = action_map.get(env_name)
 

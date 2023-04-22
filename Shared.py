@@ -66,10 +66,6 @@ class Shared:
             p=[1 - epsilon_override, epsilon_override],
         )
         
-    def get_policy():
-        pass
-    
-    
     def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
         episode_hist, solved, rgb_array = (
