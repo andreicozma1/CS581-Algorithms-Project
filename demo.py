@@ -325,7 +325,8 @@ with gr.Blocks(title="CS581 Demo") as demo:
                 out_reward = gr.components.Textbox(label="Last Reward")
 
         out_image_policy = gr.components.Image(
-            value=np.ones((16, 128)),
+            # value=np.ones((16, 128)),
+            # shape=(16, 128),
             label="Action Sampled vs Policy Distribution for Current State",
             type="numpy",
             image_mode="RGB",
