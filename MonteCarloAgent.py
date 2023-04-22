@@ -3,18 +3,36 @@ import numpy as np
 import gymnasium as gym
 from tqdm import tqdm
 import argparse
-
+from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 import wandb
 
 
 class MonteCarloAgent:
-    def __init__(self, env_name="CliffWalking-v0", gamma=0.99, epsilon=0.1, **kwargs):
+    def __init__(
+        self,
+        env_name="CliffWalking-v0",
+        gamma=0.99,
+        epsilon=0.1,
+        run_name=None,
+        **kwargs,
+    ):
         print("=" * 80)
         print(f"# MonteCarloAgent - {env_name}")
         print(f"- epsilon: {epsilon}")
         print(f"- gamma: {gamma}")
-        self.env = gym.make(env_name, **kwargs)
+        print(f"- run_name: {run_name}")
+        self.run_name = run_name
+        self.env_name = env_name
         self.epsilon, self.gamma = epsilon, gamma
+
+        self.env_kwargs = kwargs
+        if self.env_name == "FrozenLake-v1":
+            self.env_kwargs["desc"] = None
+            self.env_kwargs["map_name"] = "4x4"
+            self.env_kwargs["is_slippery"] = "False"
+
+        self.env = gym.make(self.env_name, **self.env_kwargs)
+
         self.n_states, self.n_actions = (
             self.env.observation_space.n,
             self.env.action_space.n,
@@ -43,17 +61,21 @@ class MonteCarloAgent:
         print(self.Pi)
         print("=" * 80)
 
-    def choose_action(self, state, override_epsilon=False, **kwargs):
+    def choose_action(self, state, epsilon_override=None, greedy=False, **kwargs):
         # Sample an action from the policy.
         # The override_epsilon argument allows forcing the use of a possibly new self.epsilon value than the one used during training.
         # The ability to override was mostly added for testing purposes and for the demo.
+        greedy_action = np.argmax(self.Pi[state])
 
-        if override_epsilon is False:
+        if greedy:
+            return greedy_action
+
+        if epsilon_override is None:
             return np.random.choice(self.n_actions, p=self.Pi[state])
 
         return np.random.choice(
-            [np.argmax(self.Pi[state]), np.random.randint(self.n_actions)],
-            p=[1 - self.epsilon, self.epsilon],
+            [greedy_action, np.random.randint(self.n_actions)],
+            p=[1 - epsilon_override, epsilon_override],
         )
 
     def generate_episode(self, max_steps=500, render=False, **kwargs):
@@ -61,23 +83,35 @@ class MonteCarloAgent:
         episode_hist, solved, rgb_array = [], False, None
 
         # Generate an episode following the current policy
-        for _ in range(max_steps):
+        while len(episode_hist) < max_steps:
             rgb_array = self.env.render() if render else None
+
             # Sample an action from the policy
             action = self.choose_action(state, **kwargs)
             # Take the action and observe the reward and next state
             next_state, reward, done, truncated, _ = self.env.step(action)
+
             # Keeping track of the trajectory
             episode_hist.append((state, action, reward))
-            state = next_state
-
             yield episode_hist, solved, rgb_array
 
-            # This is where the agent got to the goal.
-            # In the case in which agent jumped off the cliff, it is simply respawned at the start position without termination.
-            if done or truncated:
+            # For CliffWalking-v0 and Taxi-v3, the episode is solved when it terminates
+            if done and (
+                self.env_name == "CliffWalking-v0" or self.env_name == "Taxi-v3"
+            ):
                 solved = True
                 break
+
+            # For FrozenLake-v1, the episode terminates when the agent moves into a hole or reaches the goal
+            # We consider the episode solved when the agent reaches the goal (done == True and reward == 1)
+            if done and self.env_name == "FrozenLake-v1" and reward == 1:
+                solved = True
+                break
+
+            if done or truncated:
+                break
+
+            state = next_state
 
         rgb_array = self.env.render() if render else None
 
@@ -135,14 +169,24 @@ class MonteCarloAgent:
         test_every=100,
         update_type="first_visit",
         log_wandb=False,
+        save_best=True,
+        save_best_dir=None,
         **kwargs,
     ):
         print(f"Training agent for {n_train_episodes} episodes...")
 
-        train_running_success_rate, test_success_rate = 0.0, 0.0
+        (
+            train_running_success_rate,
+            test_success_rate,
+            test_running_success_rate,
+            avg_ep_len,
+        ) = (0.0, 0.0, 0.0, 0.0)
+
         stats = {
             "train_running_success_rate": train_running_success_rate,
+            "test_running_success_rate": test_running_success_rate,
             "test_success_rate": test_success_rate,
+            "avg_ep_len": avg_ep_len,
         }
 
         update_func = getattr(self, f"update_{update_type}")
@@ -157,36 +201,52 @@ class MonteCarloAgent:
             episode_hist, solved, _ = self.run_episode(**kwargs)
             rewards = [x[2] for x in episode_hist]
             total_reward, avg_reward = sum(rewards), np.mean(rewards)
+
             train_running_success_rate = (
                 0.99 * train_running_success_rate + 0.01 * solved
             )
+            avg_ep_len = 0.99 * avg_ep_len + 0.01 * len(episode_hist)
+
             update_func(episode_hist)
 
             stats = {
                 "train_running_success_rate": train_running_success_rate,
+                "test_running_success_rate": test_running_success_rate,
                 "test_success_rate": test_success_rate,
+                "avg_ep_len": avg_ep_len,
                 "total_reward": total_reward,
                 "avg_reward": avg_reward,
             }
             tqrange.set_postfix(stats)
 
+            # Test the agent every test_every episodes with the greedy policy (by default)
             if e % test_every == 0:
                 test_success_rate = self.test(verbose=False, **kwargs)
+                if save_best and test_success_rate > 0.9:
+                    if self.run_name is None:
+                        print(f"Warning: run_name is None, not saving best policy")
+                    else:
+                        self.save_policy(self.run_name, save_best_dir)
+
                 if log_wandb:
                     self.wandb_log_img(episode=e)
 
+            test_running_success_rate = (
+                0.99 * test_running_success_rate + 0.01 * test_success_rate
+            )
+            stats["test_running_success_rate"] = test_running_success_rate
             stats["test_success_rate"] = test_success_rate
             tqrange.set_postfix(stats)
 
             if log_wandb:
                 wandb.log(stats)
 
-    def test(self, n_test_episodes=100, verbose=True, **kwargs):
+    def test(self, n_test_episodes=100, verbose=True, greedy=True, **kwargs):
         if verbose:
             print(f"Testing agent for {n_test_episodes} episodes...")
         num_successes = 0
         for e in range(n_test_episodes):
-            _, solved, _ = self.run_episode(**kwargs)
+            _, solved, _ = self.run_episode(greedy=greedy, **kwargs)
             num_successes += solved
             if verbose:
                 word = "reached" if solved else "did not reach"
@@ -247,8 +307,8 @@ def main():
     parser.add_argument(
         "--n_train_episodes",
         type=int,
-        default=2000,
-        help="The number of episodes to train for. (default: 2000)",
+        default=2500,
+        help="The number of episodes to train for. (default: 2500)",
     )
     parser.add_argument(
         "--n_test_episodes",
@@ -266,8 +326,8 @@ def main():
     parser.add_argument(
         "--max_steps",
         type=int,
-        default=500,
-        help="The maximum number of steps per episode before the episode is forced to end. (default: 500)",
+        default=200,
+        help="The maximum number of steps per episode before the episode is forced to end. (default: 200)",
     )
 
     parser.add_argument(
@@ -295,14 +355,14 @@ def main():
     parser.add_argument(
         "--gamma",
         type=float,
-        default=0.99,
-        help="The value for the discount factor to use. (default: 0.99)",
+        default=1.0,
+        help="The value for the discount factor to use. (default: 1.0)",
     )
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.1,
-        help="The value for the epsilon-greedy policy to use. (default: 0.1)",
+        default=0.4,
+        help="The value for the epsilon-greedy policy to use. (default: 0.4)",
     )
 
     ### Environment parameters
@@ -310,6 +370,7 @@ def main():
         "--env",
         type=str,
         default="CliffWalking-v0",
+        choices=["CliffWalking-v0", "FrozenLake-v1", "Taxi-v3"],
         help="The Gymnasium environment to use. (default: CliffWalking-v0)",
     )
     parser.add_argument(
@@ -352,9 +413,11 @@ def main():
         render_mode=args.render_mode,
     )
 
-    run_name = f"{agent.__class__.__name__}_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}"
+    run_name = f"{agent.__class__.__name__}_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}_{args.update_type}"
     if args.wandb_run_name_suffix is not None:
         run_name += f"+{args.wandb_run_name_suffix}"
+
+    agent.run_name = run_name
 
     try:
         if args.train:
@@ -375,6 +438,8 @@ def main():
                 max_steps=args.max_steps,
                 update_type=args.update_type,
                 log_wandb=args.wandb_project is not None,
+                save_best=True,
+                save_best_dir=args.save_dir,
             )
             if not args.no_save:
                 agent.save_policy(

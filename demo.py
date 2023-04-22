@@ -31,6 +31,12 @@ action_map = {
         2: "down",
         3: "left",
     },
+    "FrozenLake-v1": {
+        0: "left",
+        1: "down",
+        2: "right",
+        3: "up",
+    },
 }
 
 
@@ -45,6 +51,12 @@ live_render_fps = 5
 live_epsilon = 0.0
 live_paused = True
 live_steps_forward = None
+should_reset = False
+
+
+# def reset():
+#     global should_reset
+#     should_reset = True
 
 
 def change_render_fps(x):
@@ -77,7 +89,7 @@ def onclick_btn_forward():
 
 
 def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
-    global live_render_fps, live_epsilon, live_paused, live_steps_forward
+    global live_render_fps, live_epsilon, live_paused, live_steps_forward, should_reset
     live_render_fps = render_fps
     live_epsilon = epsilon
     live_steps_forward = None
@@ -124,7 +136,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
     for episode in range(n_test_episodes):
         for step, (episode_hist, solved, rgb_array) in enumerate(
             agent.generate_episode(
-                max_steps=max_steps, render=True, override_epsilon=True
+                max_steps=max_steps, render=True, epsilon_override=live_epsilon
             )
         ):
             _, _, last_reward = (
@@ -132,6 +144,30 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             )
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
+
+            rgb_array_height, rgb_array_width = 128, 512
+            rgb_array = cv2.resize(
+                rgb_array,
+                (
+                    int(rgb_array.shape[1] / rgb_array.shape[0] * rgb_array_height),
+                    rgb_array_height,
+                ),
+                interpolation=cv2.INTER_AREA,
+            )
+            rgb_array_new = np.pad(
+                rgb_array,
+                (
+                    (0, 0),
+                    (
+                        (rgb_array_width - rgb_array.shape[1]) // 2,
+                        (rgb_array_width - rgb_array.shape[1]) // 2,
+                    ),
+                    (0, 0),
+                ),
+                "constant",
+            )
+
+            rgb_array = np.uint8(rgb_array_new)
 
             viz_w = 512
             viz_h = viz_w // len(curr_policy)
@@ -189,8 +225,6 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {live_epsilon:.2f}) (frame time: {1 / render_fps:.2f}s)"
             )
 
-            # Live-update the agent's epsilon value for demonstration purposes
-            agent.epsilon = live_epsilon
             yield agent_type, env_name, rgb_array, policy_viz, ep_str(
                 episode + 1
             ), ep_str(episodes_solved), step_str(
@@ -214,6 +248,24 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     step
                 ), state, action, last_reward, "Paused..."
                 time.sleep(1 / live_render_fps)
+            #     if should_reset is True:
+            #         break
+
+            # if should_reset is True:
+            #     should_reset = False
+            #     return (
+            #         agent_type,
+            #         env_name,
+            #         rgb_array,
+            #         policy_viz,
+            #         ep_str(episode + 1),
+            #         ep_str(episodes_solved),
+            #         step_str(step),
+            #         state,
+            #         action,
+            #         last_reward,
+            #         "Resetting...",
+            #     )
 
         if solved:
             episodes_solved += 1
@@ -318,6 +370,8 @@ with gr.Blocks(title="CS581 Demo") as demo:
         label="Status Message",
     )
 
+    # input_policy.change(fn=reset)
+
     btn_run.click(
         fn=run,
         inputs=[
@@ -342,5 +396,5 @@ with gr.Blocks(title="CS581 Demo") as demo:
         ],
     )
 
-demo.queue(concurrency_count=2)
+demo.queue(concurrency_count=3)
 demo.launch()

@@ -8,28 +8,43 @@ Evolution of Reinforcement Learning methods from pure Dynamic Programming-based 
 
 - Python 3
 - Gymnasium: <https://pypi.org/project/gymnasium/>
-- WandB: <https://pypi.org/project/wandb/>
-- Gradio: <https://pypi.org/project/gradio/>
+- WandB: <https://pypi.org/project/wandb/> (for logging)
+- Gradio: <https://pypi.org/project/gradio/> (for demo web app)
 
 ## Interactive Demo
 
 TODO
 
-## Dynamic-Programming Agent
+## 2. Agents
+
+### Dynamic-Programming Agent
 
 TODO
 
-### Usage
+**DP Usage:**
 
 ```bash
 TODO
 ```
 
-## Monte-Carlo Agent
+### Monte-Carlo Agent
 
-The agent starts with a randomly initialized epsilon-greedy policy and uses either the first-visit or every-visit Monte-Carlo update method to learn the optimal policy.
+This is the implementation of an On-Policy Monte-Carlo agent to solve several toy problems from the OpenAI Gymnasium.  
 
-Primarily tested on the [Cliff Walking](https://gymnasium.farama.org/environments/toy_text/cliff_walking/) toy environment.
+The agent starts with a randomly initialized epsilon-greedy policy and uses either the first-visit or every-visit Monte-Carlo update method to learn the optimal policy. Training is performed using a soft (epsilon-greedy) policy and testing uses the resulting greedy policy.
+
+Off-policy methods using importance sampling are not implemented for this project.
+
+Parameter testing results:  
+
+- `run_tests_MC_CliffWalking-v0.sh` (n_train_episodes=2500 and max_steps=200)
+  - Best Update Type: first_visit
+  - Best Gamma: 1.0
+  - Best Epsilon: 0.4
+- `run_tests_MC_FrozenLake-v1.sh` (n_train_episodes=10000 and max_steps=200)
+  - Best Update Type: first_visit
+  - Best Gamma: 1.0
+  - Best Epsilon: 0.5 (testing) and 0.2 (training)
 
 ```bash
 # Training: Policy will be saved as a `.npy` file.
@@ -39,7 +54,7 @@ python3 MonteCarloAgent.py --train
 python3 MonteCarloAgent.py --test policy_mc_CliffWalking-v0_e2000_s500_g0.99_e0.1.npy --render_mode human
 ```
 
-### Usage
+**MC Usage**
 
 ```bash
 usage: MonteCarloAgent.py [-h] [--train] [--test TEST] [--n_train_episodes N_TRAIN_EPISODES] [--n_test_episodes N_TEST_EPISODES] [--test_every TEST_EVERY] [--max_steps MAX_STEPS] [--update_type {first_visit,every_visit}]
@@ -76,56 +91,3 @@ options:
   --wandb_run_name_suffix WANDB_RUN_NAME_SUFFIX
                         WandB run name suffix for logging. (default: None)
 ```
-
-## Presentation Guide
-
-1. Title Slide: list the title of your talk along with your name  
-
-2. Test Questions Slide: provide three questions relevant to your subject  
-
-- short answers should suffice
-- somewhere during your talk provide the answers, but do not emphasize them
-
-3. Presenter’s Slides: let others get to know you  
-
-- provide a little information about yourself, your degree program and your advisor  
-- describe your interests and goals; show a map and picture(s) of your hometown
-- as examples, students frequently like to mention their pets, their travels, their interests in music and food, even their favorite movies, you name it  
-
-4. Outline Slide: provide a bulleted outline of the rest of your talk  
-
-5. Overview Slide: list important definitions and provide a brief mention of applications  
-
-6. History Slide: discuss major contributors, interesting stories and main developments  
-
-7. Algorithms Slides: describe basic procedures and methodological comparisons  
-
-- this should be the main part of your talk  
-- discuss techniques from the most basic to the state-of-the-art  
-- use examples and figures whenever possible  
-
-8. Applications Slides: educate the class about amenable problems of interest to you  
-
-- don’t get bogged down in too much minutiae  
-- once again use examples and figures whenever possible  
-
-9. Implementations Slides: discuss the results of your coding work (if any)  
-
-- compare and contrast the algorithms you implemented
-- make effective use of table and charts
-
-10. Open Issues Slide: enumerate and discuss a few open questions
-
-11. References Slide: provide a handful of key citations
-
-12. Discussion Slide: solicit questions from the class
-
-- this slide may have only a few bullets – it may even be left blank
-- this is a good opportunity for other students to add to the discussion
-- be ready to prompt some questions if there is silence
-- remember not to repeat answers to your test questions
-
-13. Test Questions Slide Revisited: show again your original test questions slide
-
-- students may now complete their answer sheets and hand them to you
-- Ashley will supervise as we applaud your excellent presentation!
