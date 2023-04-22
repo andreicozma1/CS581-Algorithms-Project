@@ -73,7 +73,6 @@ def change_epsilon(x):
 
 def change_paused(x):
     print("Changing paused:", x)
-
     global live_paused
     live_paused = pause_val_map[x]
     next_val = pause_val_map_inv[not live_paused]
@@ -134,7 +133,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
         return f"{step + 1}"
 
     for episode in range(n_test_episodes):
-        time.sleep(1.0)
+        time.sleep(0.5)
 
         for step, (episode_hist, solved, rgb_array) in enumerate(
             agent.generate_episode(
@@ -147,7 +146,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            rgb_array_height, rgb_array_width = 150, 512
+            rgb_array_height, rgb_array_width = 384, 768
             rgb_array = cv2.resize(
                 rgb_array,
                 (
@@ -156,20 +155,21 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 ),
                 interpolation=cv2.INTER_AREA,
             )
-            rgb_array_new = np.pad(
-                rgb_array,
-                (
-                    (0, 0),
-                    (
-                        (rgb_array_width - rgb_array.shape[1]) // 2,
-                        (rgb_array_width - rgb_array.shape[1]) // 2,
-                    ),
-                    (0, 0),
-                ),
-                "constant",
-            )
 
-            rgb_array = np.uint8(rgb_array_new)
+            if rgb_array.shape[1] < rgb_array_width:
+                rgb_array_new = np.pad(
+                    rgb_array,
+                    (
+                        (0, 0),
+                        (
+                            (rgb_array_width - rgb_array.shape[1]) // 2,
+                            (rgb_array_width - rgb_array.shape[1]) // 2,
+                        ),
+                        (0, 0),
+                    ),
+                    "constant",
+                )
+                rgb_array = np.uint8(rgb_array_new)
 
             viz_w = 512
             viz_h = viz_w // len(curr_policy)
@@ -272,6 +272,8 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
         if solved:
             episodes_solved += 1
 
+        time.sleep(0.5)
+
     yield agent_type, env_name, rgb_array, policy_viz, ep_str(episode + 1), ep_str(
         episodes_solved
     ), step_str(step), state, action, reward, "Done!"
@@ -279,9 +281,8 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
 
 with gr.Blocks(title="CS581 Demo") as demo:
     gr.components.HTML(
-        "<h1>Reinforcement Learning: From Dynamic Programming to Monte-Carlo (Demo)</h1>"
+        "<h1>CS581 Final Project Demo - Reinforcement Learning: From Dynamic Programming to Monte-Carlo</h1>"
     )
-    gr.components.HTML("<h3>Authors: Andrei Cozma and Landon Harris</h3>")
 
     gr.components.HTML("<h2>Select Configuration:</h2>")
     with gr.Row():
@@ -310,7 +311,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
 
     btn_run = gr.components.Button("👀 Select", interactive=bool(all_policies))
 
-    gr.components.HTML("<h2>Live Statistics & Policy Visualization:</h2>")
+    gr.components.HTML("<h2>Live Visualization & Information:</h2>")
     with gr.Row():
         with gr.Column():
             with gr.Row():
@@ -330,7 +331,6 @@ with gr.Blocks(title="CS581 Demo") as demo:
             image_mode="RGB",
         )
 
-    gr.components.HTML("<h2>Live Customization:</h2>")
     with gr.Row():
         input_epsilon = gr.components.Slider(
             minimum=0,
@@ -353,7 +353,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
         btn_pause = gr.components.Button(
             pause_val_map_inv[not live_paused], interactive=True
         )
-        btn_forward = gr.components.Button("⏩ Step", interactive=False)
+        btn_forward = gr.components.Button("⏩ Step")
 
         btn_pause.click(
             fn=change_paused,
