@@ -1,5 +1,5 @@
 ---
-title: Reinforcement Learning: From Dynamic Programming to Monte-Carlo
+title: Reinforcement Learning - From Dynamic Programming to Monte-Carlo
 emoji: 🧠
 colorFrom: yellow
 colorTo: orange
