@@ -27,6 +27,8 @@ class MonteCarloAgent:
 
         self.env_kwargs = kwargs
         if self.env_name == "FrozenLake-v1":
+            # Can use defaults by defining map_name (4x4 or 8x8) or custom map by defining desc
+            # self.env_kwargs["map_name"] = "8x8"
             self.env_kwargs["desc"] = [
                 "SFFFFFFF",
                 "FFFFFFFH",
@@ -37,7 +39,6 @@ class MonteCarloAgent:
                 "FHFFHFHF",
                 "FFFHFFFG",
             ]
-            # self.env_kwargs["map_name"] = "8x8"
             self.env_kwargs["is_slippery"] = False
 
         self.env = gym.make(self.env_name, **self.env_kwargs)
@@ -72,7 +73,7 @@ class MonteCarloAgent:
 
     def choose_action(self, state, epsilon_override=None, greedy=False, **kwargs):
         # Sample an action from the policy.
-        # The override_epsilon argument allows forcing the use of a possibly new self.epsilon value than the one used during training.
+        # The epsilon_override argument allows forcing the use of a new epsilon value than the one previously used during training.
         # The ability to override was mostly added for testing purposes and for the demo.
         greedy_action = np.argmax(self.Pi[state])
 
@@ -112,11 +113,11 @@ class MonteCarloAgent:
             episode_hist.append((state, action, reward))
             yield episode_hist, solved, rgb_array
 
+            # Rendering new frame if needed
             rgb_array = self.env.render() if render else None
+
             # For CliffWalking-v0 and Taxi-v3, the episode is solved when it terminates
-            if done and (
-                self.env_name == "CliffWalking-v0" or self.env_name == "Taxi-v3"
-            ):
+            if done and self.env_name in ["CliffWalking-v0", "Taxi-v3"]:
                 solved = True
                 break
 
@@ -125,9 +126,10 @@ class MonteCarloAgent:
             if done and self.env_name == "FrozenLake-v1":
                 if next_state == self.env.nrow * self.env.ncol - 1:
                     solved = True
-                    # print("Solved!")
                     break
                 else:
+                    # Instead of terminating the episode when the agent moves into a hole, we reset the environment
+                    # This is to keep consistent with the other environments
                     done = False
                     next_state, _ = self.env.reset()
 
@@ -137,7 +139,6 @@ class MonteCarloAgent:
             state = next_state
 
         rgb_array = self.env.render() if render else None
-
         yield episode_hist, solved, rgb_array
 
     def run_episode(self, max_steps=500, render=False, **kwargs):
