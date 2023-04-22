@@ -16,8 +16,6 @@ class DPAgent(Shared):
         self.Pi = np.zeros(self.env.observation_space.n, self.env.action_space.n)
         if self.gamma >= 1.0:
             warnings.warn("DP will never converge with a gamma value =1.0. Try 0.99?", UserWarning)
-        print(self.env)
-        exit(1)
 
     def policy(self, state):
         return self.Pi[state]
@@ -68,7 +66,7 @@ class DPAgent(Shared):
 
 if __name__ == "__main__":
     # env = gym.make('FrozenLake-v1', render_mode='human')
-    dp = DPAgent(env_name="FrozenLake-v1", gamma=0.99)
+    dp = DPAgent(env="FrozenLake-v1", gamma=0.99)
     dp.train()
     dp.save_policy('dp_policy.npy')
     env = gym.make('FrozenLake-v1', render_mode='human', is_slippery=False, desc=[

@@ -6,19 +6,19 @@ class Shared:
     
     def __init__(
         self,/,
-        env_name="CliffWalking-v0",
+        env="CliffWalking-v0",
         gamma=0.99,
         epsilon=0.1,
         run_name=None,
         **kwargs,
     ):
         print("=" * 80)
-        print(f"# Init Agent - {env_name}")
+        print(f"# Init Agent - {env}")
         print(f"- epsilon: {epsilon}")
         print(f"- gamma: {gamma}")
         print(f"- run_name: {run_name}")
         self.run_name = run_name
-        self.env_name = env_name
+        self.env_name = env
         self.epsilon, self.gamma = epsilon, gamma
 
         self.env_kwargs = {k:v for k,v in kwargs.items() if k in ['render_mode']}

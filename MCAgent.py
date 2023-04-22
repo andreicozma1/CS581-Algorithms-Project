@@ -9,13 +9,13 @@ class MCAgent(Shared):
     def __init__(
         self,
         /,
-        env_name="CliffWalking-v0",
+        env="CliffWalking-v0",
         gamma=0.99,
         epsilon=0.1,
         run_name=None,
         **kwargs,
     ):
-        super().__init__(env_name, gamma, epsilon, run_name, **kwargs)
+        super().__init__(env, gamma, epsilon, run_name, **kwargs)
         self.reset()
 
     def reset(self):
