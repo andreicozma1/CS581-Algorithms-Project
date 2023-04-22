@@ -16,7 +16,7 @@ class DPAgent(Shared):
     def policy(self, state):
         return self.Pi[state]
 
-    def train(self):
+    def train(self, **kwargs):
         i = 0
         while True:
             delta = 0
