@@ -3,6 +3,7 @@ import time
 import numpy as np
 import gradio as gr
 from MonteCarloAgent import MonteCarloAgent
+from DPAgent import DP
 import scipy.ndimage
 import cv2
 
@@ -28,7 +29,7 @@ except FileNotFoundError:
 # All supported agents
 agent_map = {
     "MonteCarloAgent": MonteCarloAgent,
-    # TODO: Add DP Agent
+    "DPAgent": DP
 }
 action_map = {
     "CliffWalking-v0": {
@@ -161,7 +162,9 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 episode_hist[-2] if len(episode_hist) > 1 else (None, None, None)
             )
             state, action, reward = episode_hist[-1]
-            curr_policy = agent.Pi[state]
+            curr_policy = agent.policy(state)
+            curr_policy -= np.min(curr_policy)
+            curr_policy = curr_policy / np.sum(curr_policy)
 
             # frame_env = cv2.resize(
             #     frame_env,
