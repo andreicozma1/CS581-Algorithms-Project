@@ -178,8 +178,8 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 1.0,
             )
             
-            # text_color = frame_policy[int((action + 0.5) * frame_policy_res // len(curr_policy)), frame_policy_h // 2]
-            # text_color = 1.0 - text_color
+            text_color = frame_policy[frame_policy_h // 2, int((action + 0.5) * frame_policy_res // len(curr_policy))]
+            text_color = 1.0 - text_color
 
             cv2.putText(
                 frame_policy,
@@ -190,7 +190,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
-                1.0,
+                text_color,
                 1,
                 cv2.LINE_AA,
             )
@@ -210,7 +210,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     ),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.5,
-                    1.0,
+                    text_color,
                     1,
                     cv2.LINE_AA,
                 )
@@ -330,12 +330,14 @@ with gr.Blocks(title="CS581 Demo") as demo:
             minimum=0,
             maximum=1,
             value=live_epsilon,
+            step=1/200,
             label="Epsilon (0 = greedy, 1 = random)",
         )
         input_epsilon.change(change_epsilon, inputs=[input_epsilon])
 
         input_render_fps = gr.components.Slider(
-            minimum=1, maximum=60, value=live_render_fps, label="Simulation speed (fps)"
+            minimum=1, maximum=60, value=live_render_fps, step=1,
+            label="Simulation speed (fps)"
         )
         input_render_fps.change(change_render_fps, inputs=[input_render_fps])
 

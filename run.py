@@ -48,7 +48,7 @@ def main():
         type=str,
         choices=["first_visit", "every_visit"],
         default="first_visit",
-        help="The type of update to use. (default: first_visit)",
+        help="The type of update to use. Only supported by Monte-Carlo agent. (default: first_visit)",
     )
 
     parser.add_argument(
