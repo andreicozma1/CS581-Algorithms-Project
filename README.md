@@ -1,14 +1,14 @@
-# CS581 Project - Reinforcement Learning: From Dynamic Programming to Monte-Carlo
-
 ---
-
 title: Reinforcement Learning: From Dynamic Programming to Monte-Carlo
 emoji: 🧠
+colorFrom: yellow
+colorTo: orange
 sdk: gradio
-sdk_version: 3.27.0
 app_file: demo.py
 pinned: true
 ---
+
+# CS581 Project - Reinforcement Learning: From Dynamic Programming to Monte-Carlo
 
 [Google Slides](https://docs.google.com/presentation/d/1v4WwBQKoPnGiyCMXgUs-pCCJ8IwZqM3thUf-Ky00eTQ/edit?usp=sharing)
 
