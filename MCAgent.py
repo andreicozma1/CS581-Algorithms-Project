@@ -1,16 +1,19 @@
-import os
 import numpy as np
-import gymnasium as gym
 from tqdm import tqdm
+from Shared import Shared
 import wandb
-from .Shared import Shared
 
 class MCAgent(Shared):
+    
     def __init__(
         self,
+        env_name="CliffWalking-v0",
+        gamma=0.99,
+        epsilon=0.1,
+        run_name=None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(env_name, gamma, epsilon, run_name, **kwargs)
         self.reset()
 
     def reset(self):
