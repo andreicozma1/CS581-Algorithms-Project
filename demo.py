@@ -12,8 +12,8 @@ default_render_fps = 5
 default_epsilon = 0.0
 default_paused = True
 
-frame_env_h, frame_env_w = 256, 768
-frame_policy_w = 384
+frame_env_h, frame_env_w = 512, 768
+frame_policy_res = 384
 
 # For the dropdown list of policies
 policies_folder = "policies"
@@ -163,38 +163,38 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
             state, action, reward = episode_hist[-1]
             curr_policy = agent.Pi[state]
 
-            frame_env = cv2.resize(
-                frame_env,
-                (
-                    int(frame_env.shape[1] / frame_env.shape[0] * frame_env_h),
-                    frame_env_h,
-                ),
-                interpolation=cv2.INTER_AREA,
-            )
+            # frame_env = cv2.resize(
+            #     frame_env,
+            #     (
+            #         int(frame_env.shape[1] / frame_env.shape[0] * frame_env_h),
+            #         frame_env_h,
+            #     ),
+            #     interpolation=cv2.INTER_AREA,
+            # )
 
-            if frame_env.shape[1] < frame_env_w:
-                rgb_array_new = np.pad(
-                    frame_env,
-                    (
-                        (0, 0),
-                        (
-                            (frame_env_w - frame_env.shape[1]) // 2,
-                            (frame_env_w - frame_env.shape[1]) // 2,
-                        ),
-                        (0, 0),
-                    ),
-                    "constant",
-                )
-                frame_env = np.uint8(rgb_array_new)
+            # if frame_env.shape[1] < frame_env_w:
+            #     rgb_array_new = np.pad(
+            #         frame_env,
+            #         (
+            #             (0, 0),
+            #             (
+            #                 (frame_env_w - frame_env.shape[1]) // 2,
+            #                 (frame_env_w - frame_env.shape[1]) // 2,
+            #             ),
+            #             (0, 0),
+            #         ),
+            #         "constant",
+            #     )
+            #     frame_env = np.uint8(rgb_array_new)
 
-            frame_policy_h = frame_policy_w // len(curr_policy)
-            frame_policy = np.zeros((frame_policy_h, frame_policy_w))
+            frame_policy_h = frame_policy_res // len(curr_policy)
+            frame_policy = np.zeros((frame_policy_h, frame_policy_res))
             for i, p in enumerate(curr_policy):
                 frame_policy[
                     :,
                     i
-                    * (frame_policy_w // len(curr_policy)) : (i + 1)
-                    * (frame_policy_w // len(curr_policy)),
+                    * (frame_policy_res // len(curr_policy)) : (i + 1)
+                    * (frame_policy_res // len(curr_policy)),
                 ] = p
 
             frame_policy = scipy.ndimage.gaussian_filter(frame_policy, sigma=1.0)
@@ -208,7 +208,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                 frame_policy,
                 str(action),
                 (
-                    int((action + 0.5) * frame_policy_w // len(curr_policy) - 8),
+                    int((action + 0.5) * frame_policy_res // len(curr_policy) - 8),
                     frame_policy_h // 2 - 5,
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -226,7 +226,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     action_name,
                     (
                         int(
-                            (action + 0.5) * frame_policy_w // len(curr_policy)
+                            (action + 0.5) * frame_policy_res // len(curr_policy)
                             - 5 * len(action_name)
                         ),
                         frame_policy_h // 2 + 25,
@@ -274,7 +274,7 @@ def run(policy_fname, n_test_episodes, max_steps, render_fps, epsilon):
                     agent_type,
                     env_name,
                     np.ones((frame_env_h, frame_env_w, 3)),
-                    np.ones((frame_policy_h, frame_policy_w)),
+                    np.ones((frame_policy_h, frame_policy_res)),
                     ep_str(episode + 1),
                     ep_str(episodes_solved),
                     step_str(step),
@@ -345,9 +345,8 @@ with gr.Blocks(title="CS581 Demo") as demo:
             label="Action Sampled vs Policy Distribution for Current State",
             type="numpy",
             image_mode="RGB",
-            value=np.ones((16, frame_policy_w)),
-            shape=(16, frame_policy_w),
         )
+        out_image_policy.style(height=200)
 
     with gr.Row():
         input_epsilon = gr.components.Slider(
@@ -367,9 +366,8 @@ with gr.Blocks(title="CS581 Demo") as demo:
         label="Environment",
         type="numpy",
         image_mode="RGB",
-        value=np.ones((frame_env_h, frame_env_w, 3)),
-        shape=(frame_env_h, frame_env_w),
     )
+    out_image_frame.style(height=frame_env_h)
 
     with gr.Row():
         btn_pause = gr.components.Button(
