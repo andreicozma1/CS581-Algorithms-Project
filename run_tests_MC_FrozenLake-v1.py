@@ -17,7 +17,7 @@ vals_gamma = [1.0, 0.98, 0.96, 0.94]
 
 def run_test(args):
     os.system(
-        f"python3 MonteCarloAgent.py --agent MCAgent --train --n_train_episodes {n_train_episodes} --max_steps {max_steps} --env {env} --gamma {args[0]} --epsilon {args[1]} --update_type {args[2]} --wandb_project {wandb_project} --wandb_run_name_suffix {args[3]} --no_save"
+        f"python3 run.py --agent MCAgent --train --n_train_episodes {n_train_episodes} --max_steps {max_steps} --env {env} --gamma {args[0]} --epsilon {args[1]} --update_type {args[2]} --wandb_project {wandb_project} --wandb_run_name_suffix {args[3]} --no_save"
     )
 
 
