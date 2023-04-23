@@ -171,6 +171,9 @@ class Shared:
             os.makedirs(save_dir, exist_ok=True)
             fname = os.path.join(save_dir, fname)
 
+        if not fname.endswith(".npy"):
+            fname += ".npy"
+
         print(f"Saving policy to: '{fname}'")
         np.save(fname, self.Pi)
 
