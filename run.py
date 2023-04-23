@@ -138,7 +138,9 @@ def main():
     args = parser.parse_args()
     print(vars(args))
 
-    agent = load_agent(args.agent, **dict(args._get_kwargs()))
+    agent = load_agent(
+        args.agent if args.test is None else args.test, **dict(args._get_kwargs())
+    )
 
     agent.run_name += f"_e{args.n_train_episodes}_s{args.max_steps}"
     if args.wandb_run_name_suffix is not None:
@@ -169,7 +171,6 @@ def main():
             if not args.no_save:
                 agent.save_policy(save_dir=args.save_dir)
         elif args.test is not None:
-            agent.load_policy(args.test)
             agent.test(
                 n_test_episodes=args.n_test_episodes,
                 max_steps=args.max_steps,

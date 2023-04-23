@@ -1,13 +1,12 @@
 import os
 import time
-import warnings
 import numpy as np
 import gradio as gr
 
 import scipy.ndimage
 import cv2
 
-from agents import AGENTS_MAP
+from agents import load_agent
 
 default_n_test_episodes = 10
 default_max_steps = 500
@@ -137,33 +136,16 @@ def run(
     print(f"- epsilon: {localstate.live_steps_forward}")
 
     policy_path = os.path.join(policies_folder, policy_fname)
-    props = policy_fname.split("_")
 
     try:
-        agent_key, env_key = props[0], props[1]
-        agent_args = {}
-        for prop in props[2:]:
-            props_split = prop.split(":")
-            if len(props_split) == 2:
-                agent_args[props_split[0]] = props_split[1]
-            else:
-                warnings.warn(
-                    f"Skipping property {prop} as it does not have the format 'key:value'.",
-                    UserWarning,
-                )
-    except IndexError:
+        agent = load_agent(
+            policy_path, return_agent_env_keys=True, render_mode="rgb_array"
+        )
+    except ValueError:
         yield localstate, None, None, None, None, None, None, None, None, None, None, "🚫 Please select a valid policy file."
         return
 
-    agent_args.update(
-        {
-            "env": env_key,
-            "render_mode": "rgb_array",
-        }
-    )
-    print("agent_args:", agent_args)
-    agent = AGENTS_MAP[agent_key](**agent_args)
-    agent.load_policy(policy_path)
+    agent_key, env_key = agent.__class__.__name__, agent.env_name
     env_action_map = action_map.get(env_key)
 
     solved, frame_env, frame_policy = None, None, None
