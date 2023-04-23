@@ -10,7 +10,7 @@ max_steps = 200
 
 num_tests = 10
 
-vals_update_type = ["first_visit", "every_visit"]
+vals_update_type = ["first_visit"]
 vals_epsilon = [0.1, 0.2, 0.3, 0.4, 0.5]
 vals_gamma = [1.0, 0.98, 0.96, 0.94]
 
