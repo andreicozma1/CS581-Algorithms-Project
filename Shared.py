@@ -12,7 +12,7 @@ class Shared:
         gamma=0.99,
         epsilon=0.1,
         run_name=None,
-        frozenlake_size=8,
+        frozenlake_size=16,
         **kwargs,
     ):
         print("=" * 80)

@@ -109,12 +109,6 @@ def main():
         help="WandB project name for logging. If not provided, no logging is done. (default: None)",
     )
     parser.add_argument(
-        "--wandb_group",
-        type=str,
-        default="monte-carlo",
-        help="WandB group name for logging. (default: monte-carlo)",
-    )
-    parser.add_argument(
         "--wandb_job_type",
         type=str,
         default="train",
@@ -144,7 +138,7 @@ def main():
                 wandb.init(
                     project=args.wandb_project,
                     name=run_name,
-                    group=args.wandb_group,
+                    group=args.agent,
                     job_type=args.wandb_job_type,
                     config=dict(args._get_kwargs()),
                 )
