@@ -75,6 +75,7 @@ class MCAgent(Shared):
         log_wandb=False,
         save_best=True,
         save_best_dir=None,
+        early_stopping=False,
         **kwargs,
     ):
         print(f"Training agent for {n_train_episodes} episodes...")
@@ -140,15 +141,17 @@ class MCAgent(Shared):
                 wandb.log(stats)
 
             if test_running_success_rate > 0.999:
-                print(
-                    f"CONVERGED: test success rate running avg reached 100% after {e} episodes."
-                )
                 if save_best:
                     if self.run_name is None:
                         print("WARNING: run_name is None, not saving best policy.")
                     else:
                         self.save_policy(self.run_name, save_best_dir)
-                break
+
+                if early_stopping:
+                    print(
+                        f"CONVERGED: test success rate running avg reached 100% after {e} episodes."
+                    )
+                    break
 
     def wandb_log_img(self, episode=None):
         caption_suffix = "Initial" if episode is None else f"After Episode {episode}"
