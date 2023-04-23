@@ -8,14 +8,16 @@ import warnings
 
 
 class DPAgent(Shared):
-    def __init__(self,/,**kwargs):
-        super().__init__(**kwargs)
-        self.theta = kwargs.get('theta', 1e-10)
+    def __init__(self, /, **kwargs):
+        super().__init__(run_name=self.__class__.__name__, **kwargs)
+        self.theta = kwargs.get("theta", 1e-10)
         print(self.theta)
         self.V = np.zeros(self.env.observation_space.n)
         self.Pi = np.zeros(self.env.observation_space.n, self.env.action_space.n)
         if self.gamma >= 1.0:
-            warnings.warn("DP will never converge with a gamma value =1.0. Try 0.99?", UserWarning)
+            warnings.warn(
+                "DP will never converge with a gamma value =1.0. Try 0.99?", UserWarning
+            )
 
     def policy(self, state):
         return self.Pi[state]
@@ -31,9 +33,13 @@ class DPAgent(Shared):
                 Q = np.zeros(self.env.action_space.n)
                 for action in range(self.env.action_space.n):
                     expected_value = 0
-                    for probability, next_state, reward, done in self.env.P[state][action]:
+                    for probability, next_state, reward, done in self.env.P[state][
+                        action
+                    ]:
                         # if state == self.env.observation_space.n-1: reward = 1
-                        expected_value += probability * (reward + self.gamma * self.V[next_state])
+                        expected_value += probability * (
+                            reward + self.gamma * self.V[next_state]
+                        )
                     Q[action] = expected_value
                 action, value = np.argmax(Q), np.max(Q)
 
@@ -54,12 +60,14 @@ class DPAgent(Shared):
                 expected_value = 0
                 for probability, next_state, reward, done in self.env.P[s][a]:
                     # if state == self.env.observation_space.n-1: reward = 1
-                    expected_value += probability * (reward + self.gamma * self.V[next_state])
-                self.Pi[s,a] = expected_value
+                    expected_value += probability * (
+                        reward + self.gamma * self.V[next_state]
+                    )
+                self.Pi[s, a] = expected_value
         idxs = np.argmax(self.Pi, axis=1)
         print(idxs)
-        self.Pi = np.zeros((self.env.observation_space.n,self.env.action_space.n))
-        self.Pi[np.arange(self.env.observation_space.n),idxs] = 1
+        self.Pi = np.zeros((self.env.observation_space.n, self.env.action_space.n))
+        self.Pi[np.arange(self.env.observation_space.n), idxs] = 1
         # print(self.Pi)
         # return self.V, self.Pi
 
@@ -68,17 +76,22 @@ if __name__ == "__main__":
     # env = gym.make('FrozenLake-v1', render_mode='human')
     dp = DPAgent(env="FrozenLake-v1", gamma=0.99)
     dp.train()
-    dp.save_policy('dp_policy.npy')
-    env = gym.make('FrozenLake-v1', render_mode='human', is_slippery=False, desc=[
-        "SFFFFFFF",
-        "FFFFFFFH",
-        "FFFHFFFF",
-        "FFFFFHFF",
-        "FFFHFFFF",
-        "FHHFFFHF",
-        "FHFFHFHF",
-        "FFFHFFFG",
-    ])
+    dp.save_policy("dp_policy.npy")
+    env = gym.make(
+        "FrozenLake-v1",
+        render_mode="human",
+        is_slippery=False,
+        desc=[
+            "SFFFFFFF",
+            "FFFFFFFH",
+            "FFFHFFFF",
+            "FFFFFHFF",
+            "FFFHFFFF",
+            "FHHFFFHF",
+            "FHFFHFHF",
+            "FFFHFFFG",
+        ],
+    )
 
     state, _ = env.reset()
     done = False
