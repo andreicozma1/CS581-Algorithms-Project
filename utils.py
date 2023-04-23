@@ -33,7 +33,7 @@ def load_agent(agent_key, **kwargs):
                     )
             # Overwrite any conflicting arguments with those from the file name
             parsed_args["env"] = env_key
-            kwargs |= parsed_args
+            kwargs.update(parsed_args)
             print("agent_args:", kwargs)
         except IndexError as e:
             raise ValueError(
