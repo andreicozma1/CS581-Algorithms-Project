@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import gymnasium as gym
+from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
 
 class Shared:
@@ -11,6 +12,7 @@ class Shared:
         gamma=0.99,
         epsilon=0.1,
         run_name=None,
+        frozenlake_size=8,
         **kwargs,
     ):
         print("=" * 80)
@@ -27,16 +29,17 @@ class Shared:
         if self.env_name == "FrozenLake-v1":
             # Can use defaults by defining map_name (4x4 or 8x8) or custom map by defining desc
             # self.env_kwargs["map_name"] = "8x8"
-            self.env_kwargs["desc"] = [
-                "SFFFFFFF",
-                "FFFFFFFH",
-                "FFFHFFFF",
-                "FFFFFHFF",
-                "FFFHFFFF",
-                "FHHFFFHF",
-                "FHFFHFHF",
-                "FFFHFFFG",
-            ]
+            # self.env_kwargs["desc"] = [
+            #     "SFFFFFFF",
+            #     "FFFFFFFH",
+            #     "FFFHFFFF",
+            #     "FFFFFHFF",
+            #     "FFFHFFFF",
+            #     "FHHFFFHF",
+            #     "FHFFHFHF",
+            #     "FFFHFFFG",
+            # ]
+            self.env_kwargs["desc"] = generate_random_map(size=frozenlake_size)
             self.env_kwargs["is_slippery"] = False
 
         self.env = gym.make(self.env_name, **self.env_kwargs)

@@ -4,8 +4,8 @@ from Shared import Shared
 import wandb
 from Shared import Shared
 
+
 class MCAgent(Shared):
-    
     def __init__(self, /, **kwargs):
         super().__init__(**kwargs)
         self.reset()
@@ -126,12 +126,6 @@ class MCAgent(Shared):
             # Test the agent every test_every episodes with the greedy policy (by default)
             if e % test_every == 0:
                 test_success_rate = self.test(verbose=False, **kwargs)
-                if save_best and test_success_rate > 0.9:
-                    if self.run_name is None:
-                        print(f"Warning: run_name is None, not saving best policy")
-                    else:
-                        self.save_policy(self.run_name, save_best_dir)
-
                 if log_wandb:
                     self.wandb_log_img(episode=e)
 
@@ -145,6 +139,16 @@ class MCAgent(Shared):
             if log_wandb:
                 wandb.log(stats)
 
+            if test_running_success_rate > 0.999:
+                print(
+                    f"CONVERGED: test success rate running avg reached 100% after {e} episodes."
+                )
+                if save_best:
+                    if self.run_name is None:
+                        print("WARNING: run_name is None, not saving best policy.")
+                    else:
+                        self.save_policy(self.run_name, save_best_dir)
+                break
 
     def wandb_log_img(self, episode=None):
         caption_suffix = "Initial" if episode is None else f"After Episode {episode}"
@@ -160,4 +164,3 @@ class MCAgent(Shared):
                 ),
             }
         )
-

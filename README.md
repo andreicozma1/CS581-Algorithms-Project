@@ -75,10 +75,10 @@ Parameter testing results:
 
 ```bash
 # Training: Policy will be saved as a `.npy` file.
-python3 MonteCarloAgent.py --train
+python3 run.py --agent "MCAgent" --train
 
 # Testing: Use the `--test` flag with the path to the policy file.
-python3 MonteCarloAgent.py --test policy_mc_CliffWalking-v0_e2000_s500_g0.99_e0.1.npy --render_mode human
+python3 run.py --agent "MCAgent" --test "policies/MCAgent_CliffWalking-v0_e2500_s200_g1.0_e0.4_first_visit.npy" --render_mode human
 ```
 
 **MC Usage**

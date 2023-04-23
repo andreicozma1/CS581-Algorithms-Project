@@ -3,6 +3,7 @@ import wandb
 
 from agents import AGENTS_MAP
 
+
 def main():
     parser = argparse.ArgumentParser()
     ### Train/Test parameters
@@ -72,7 +73,7 @@ def main():
         choices=AGENTS_MAP.keys(),
         help=f"The agent to use. One of: {AGENTS_MAP.keys()}",
     )
-        
+
     parser.add_argument(
         "--gamma",
         type=float,
@@ -94,7 +95,7 @@ def main():
         choices=["CliffWalking-v0", "FrozenLake-v1", "Taxi-v3"],
         help="The Gymnasium environment to use. (default: CliffWalking-v0)",
     )
-    
+
     parser.add_argument(
         "--render_mode",
         type=str,
