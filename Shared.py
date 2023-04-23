@@ -2,10 +2,11 @@ import os
 import numpy as np
 import gymnasium as gym
 
+
 class Shared:
-    
     def __init__(
-        self,/,
+        self,
+        /,
         env="CliffWalking-v0",
         gamma=0.99,
         epsilon=0.1,
@@ -20,8 +21,9 @@ class Shared:
         self.run_name = run_name
         self.env_name = env
         self.epsilon, self.gamma = epsilon, gamma
+        self.epsilon_override = None
 
-        self.env_kwargs = {k:v for k,v in kwargs.items() if k in ['render_mode']}
+        self.env_kwargs = {k: v for k, v in kwargs.items() if k in ["render_mode"]}
         if self.env_name == "FrozenLake-v1":
             # Can use defaults by defining map_name (4x4 or 8x8) or custom map by defining desc
             # self.env_kwargs["map_name"] = "8x8"
@@ -46,23 +48,24 @@ class Shared:
         print(f"- n_states: {self.n_states}")
         print(f"- n_actions: {self.n_actions}")
 
-    def choose_action(self, state, epsilon_override=None, greedy=False, **kwargs):
+    def choose_action(self, state, greedy=False, **kwargs):
         # Sample an action from the policy.
         # The epsilon_override argument allows forcing the use of a new epsilon value than the one previously used during training.
         # The ability to override was mostly added for testing purposes and for the demo.
         greedy_action = np.argmax(self.Pi[state])
 
-        if greedy or epsilon_override == 0:
+        if greedy or self.epsilon_override == 0.0:
             return greedy_action
 
-        if epsilon_override is None:
+        if self.epsilon_override is None:
             return np.random.choice(self.n_actions, p=self.Pi[state])
 
+        print("epsilon_override", self.epsilon_override)
         return np.random.choice(
             [greedy_action, np.random.randint(self.n_actions)],
-            p=[1 - epsilon_override, epsilon_override],
+            p=[1.0 - self.epsilon_override, self.epsilon_override],
         )
-        
+
     def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
         episode_hist, solved, rgb_array = (
@@ -118,9 +121,9 @@ class Shared:
 
     def run_episode(self, max_steps=500, render=False, **kwargs):
         # Run the generator until the end
-        episode_hist, solved, rgb_array = list(self.generate_episode(
-            max_steps, render, **kwargs
-        ))[-1]
+        episode_hist, solved, rgb_array = list(
+            self.generate_episode(max_steps, render, **kwargs)
+        )[-1]
         return episode_hist, solved, rgb_array
 
     def test(self, n_test_episodes=100, verbose=True, greedy=True, **kwargs):
@@ -143,7 +146,7 @@ class Shared:
                 f"Agent reached the goal in {num_successes}/{n_test_episodes} episodes ({success_rate * 100:.2f}%)"
             )
         return success_rate
-    
+
     def save_policy(self, fname="policy.npy", save_dir=None):
         if save_dir is not None:
             os.makedirs(save_dir, exist_ok=True)

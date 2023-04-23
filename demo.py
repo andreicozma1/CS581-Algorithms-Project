@@ -81,10 +81,22 @@ def change_render_fps(state, x):
     return state
 
 
+def change_render_fps_update(state, x):
+    print("Changing render fps:", x)
+    state.live_render_fps = x
+    return state, gr.update(value=x)
+
+
 def change_epsilon(state, x):
     print("Changing greediness:", x)
     state.live_epsilon = x
     return state
+
+
+def change_epsilon_update(state, x):
+    print("Changing greediness:", x)
+    state.live_epsilon = x
+    return state, gr.update(value=x)
 
 
 def change_paused(state, x):
@@ -159,9 +171,9 @@ def run(
             agent.generate_episode(
                 max_steps=max_steps,
                 render=True,
-                epsilon_override=localstate.live_epsilon,
             )
         ):
+            agent.epsilon_override = localstate.live_epsilon
             _, _, last_reward = (
                 episode_hist[-2] if len(episode_hist) > 1 else (None, None, None)
             )
@@ -207,7 +219,7 @@ def run(
                 str(action),
                 (
                     label_loc_w - label_width // 2,
-                    label_loc_h + label_height // 2,
+                    frame_policy_h // 3 + label_height // 2,
                 ),
                 frame_policy_label_font,
                 action_text_scale,
@@ -230,9 +242,7 @@ def run(
                     action_name,
                     (
                         int(label_loc_w - label_width / 2),
-                        frame_policy_h
-                        - (frame_policy_h - label_loc_h) // 2
-                        + label_height // 2,
+                        frame_policy_h - frame_policy_h // 3 + label_height // 2,
                     ),
                     frame_policy_label_font,
                     action_text_label_scale,
@@ -363,7 +373,14 @@ with gr.Blocks(title="CS581 Demo") as demo:
             label="Epsilon (0 = greedy, 1 = random)",
         )
         input_epsilon.change(
-            change_epsilon, inputs=[localstate, input_epsilon], outputs=[localstate]
+            change_epsilon,
+            inputs=[localstate, input_epsilon],
+            outputs=[localstate],
+        )
+        input_epsilon.release(
+            change_epsilon_update,
+            inputs=[localstate, input_epsilon],
+            outputs=[localstate, input_epsilon],
         )
 
         input_render_fps = gr.components.Slider(
@@ -377,6 +394,11 @@ with gr.Blocks(title="CS581 Demo") as demo:
             change_render_fps,
             inputs=[localstate, input_render_fps],
             outputs=[localstate],
+        )
+        input_render_fps.release(
+            change_render_fps_update,
+            inputs=[localstate, input_render_fps],
+            outputs=[localstate, input_render_fps],
         )
 
     out_image_frame = gr.components.Image(
