@@ -64,9 +64,22 @@ class RunState:
         self.should_reset = False
 
 
-def reset(state, policy_fname):
+def reset_change(state, policy_fname):
     if state.current_policy is not None and state.current_policy != policy_fname:
         state.should_reset = True
+    state.live_paused = default_paused
+    state.live_render_fps = default_render_fps
+    state.live_epsilon = default_epsilon
+    state.live_steps_forward = None
+    return (
+        state,
+        gr.update(value=pause_val_map_inv[not state.live_paused]),
+        gr.update(interactive=state.live_paused),
+    )
+
+
+def reset_click(state):
+    state.should_reset = True
     state.live_paused = default_paused
     state.live_render_fps = default_render_fps
     state.live_epsilon = default_epsilon
@@ -292,16 +305,16 @@ def run(
                 localstate.should_reset = False
                 yield (
                     localstate,
-                    agent_key,
-                    env_key,
+                    None,
+                    None,
                     np.ones((frame_env_h, frame_env_w, 3)),
                     np.ones((frame_policy_h, frame_policy_res)),
-                    ep_str(episode + 1),
-                    ep_str(episodes_solved),
-                    step_str(step),
-                    state,
-                    action,
-                    last_reward,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                     "Reset...",
                 )
                 return
@@ -358,7 +371,11 @@ with gr.Blocks(title="CS581 Demo") as demo:
             label="Max steps per episode",
         )
 
-    btn_run = gr.components.Button("👀 Select & Load", interactive=bool(all_policies))
+    with gr.Row():
+        btn_run = gr.components.Button(
+            "👀 Select & Load", interactive=bool(all_policies)
+        )
+        btn_clear = gr.components.Button("🗑️ Clear", interactive=bool(all_policies))
 
     gr.components.HTML("<h2>Live Visualization & Information:</h2>")
     with gr.Row():
@@ -448,8 +465,14 @@ with gr.Blocks(title="CS581 Demo") as demo:
     )
 
     input_policy.change(
-        fn=reset,
+        fn=reset_change,
         inputs=[localstate, input_policy],
+        outputs=[localstate, btn_pause, btn_forward],
+    )
+
+    btn_clear.click(
+        fn=reset_click,
+        inputs=[localstate],
         outputs=[localstate, btn_pause, btn_forward],
     )
 
