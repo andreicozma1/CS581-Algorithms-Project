@@ -3,11 +3,11 @@ import numpy as np
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 from matplotlib import pyplot as plt
 from tqdm import trange
-from Shared import Shared
+from AgentBase import AgentBase
 import warnings
 
 
-class DPAgent(Shared):
+class DPAgent(AgentBase):
     def __init__(self, /, **kwargs):
         super().__init__(run_name=self.__class__.__name__, **kwargs)
         self.theta = kwargs.get("theta", 1e-10)
@@ -36,7 +36,10 @@ class DPAgent(Shared):
                     for probability, next_state, reward, done in self.env.P[state][
                         action
                     ]:
-                        if self.env_name == "CliffWalking-v0" and state == self.env.observation_space.n-1: 
+                        if (
+                            self.env_name == "CliffWalking-v0"
+                            and state == self.env.observation_space.n - 1
+                        ):
                             reward = 1
                         expected_value += probability * (
                             reward + self.gamma * self.V[next_state]
@@ -53,14 +56,17 @@ class DPAgent(Shared):
             # if i % 5 == 0 and i != 0:
             #     self.test(verbose=False)
             print(f"Iteration {i}: delta={delta}")
-        
+
         self.Pi = np.empty((self.env.observation_space.n, self.env.action_space.n))
         for s in range(self.env.observation_space.n):
             for a in range(self.env.action_space.n):
                 expected_value = 0
                 for probability, next_state, reward, done in self.env.P[s][a]:
-                    if self.env_name == "CliffWalking-v0" and state == self.env.observation_space.n-1: 
-                            reward = 1
+                    if (
+                        self.env_name == "CliffWalking-v0"
+                        and state == self.env.observation_space.n - 1
+                    ):
+                        reward = 1
                     expected_value += probability * (
                         reward + self.gamma * self.V[next_state]
                     )

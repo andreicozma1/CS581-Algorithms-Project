@@ -6,7 +6,7 @@ import gradio as gr
 import scipy.ndimage
 import cv2
 
-from agents import load_agent
+from utils import load_agent
 
 default_n_test_episodes = 10
 default_max_steps = 500

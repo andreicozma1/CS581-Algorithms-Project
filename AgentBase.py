@@ -4,7 +4,7 @@ import gymnasium as gym
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
 
-class Shared:
+class AgentBase:
     def __init__(
         self,
         /,

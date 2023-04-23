@@ -1,11 +1,10 @@
 import numpy as np
 from tqdm import tqdm
-from Shared import Shared
 import wandb
-from Shared import Shared
+from AgentBase import AgentBase
 
 
-class MCAgent(Shared):
+class MCAgent(AgentBase):
     def __init__(self, /, **kwargs):
         super().__init__(run_name=self.__class__.__name__, **kwargs)
         self.reset()
