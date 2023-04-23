@@ -15,18 +15,10 @@ default_epsilon = 0.0
 default_paused = True
 
 frame_env_h, frame_env_w = 512, 768
-frame_policy_res = 256
+frame_policy_res = 512
 
 # For the dropdown list of policies
 policies_folder = "policies"
-try:
-    all_policies = [
-        file for file in os.listdir(policies_folder) if file.endswith(".npy")
-    ]
-    all_policies.sort()
-except FileNotFoundError:
-    print("ERROR: No policies folder found!")
-    all_policies = []
 
 
 action_map = {
@@ -41,6 +33,14 @@ action_map = {
         1: "down",
         2: "right",
         3: "up",
+    },
+    "Taxi-v3": {
+        0: "down",
+        1: "up",
+        2: "right",
+        3: "left",
+        4: "pickup",
+        5: "dropoff",
     },
 }
 
@@ -168,7 +168,7 @@ def run(
         return f"{step + 1}"
 
     for episode in range(n_test_episodes):
-        time.sleep(0.25)
+        time.sleep(0.5)
 
         for step, (episode_hist, solved, frame_env) in enumerate(
             agent.generate_episode(
@@ -208,7 +208,11 @@ def run(
             frame_policy_label_color = 1.0 - frame_policy[label_loc_h, label_loc_w]
             frame_policy_label_font = cv2.FONT_HERSHEY_SIMPLEX
             frame_policy_label_thicc = 1
-            action_text_scale, action_text_label_scale = 0.6, 0.3
+            action_text_scale, action_text_label_scale = 1.0, 0.6
+            # These scales are for policies that have length 4
+            # Longer policies should have smaller scales
+            action_text_scale *= 4 / len(curr_policy)
+            action_text_label_scale *= 4 / len(curr_policy)
 
             (label_width, label_height), _ = cv2.getTextSize(
                 str(action),
@@ -305,15 +309,24 @@ def run(
         if solved:
             episodes_solved += 1
 
-        time.sleep(0.25)
+        time.sleep(0.5)
 
     localstate.current_policy = None
     yield localstate, agent_key, env_key, frame_env, frame_policy, ep_str(
         episode + 1
-    ), ep_str(episodes_solved), step_str(step), state, action, reward, "Done!"
+    ), ep_str(episodes_solved), step_str(step), state, action, last_reward, "Done!"
 
 
 with gr.Blocks(title="CS581 Demo") as demo:
+    try:
+        all_policies = [
+            file for file in os.listdir(policies_folder) if file.endswith(".npy")
+        ]
+        all_policies.sort()
+    except FileNotFoundError:
+        print("ERROR: No policies folder found!")
+        all_policies = []
+
     gr.components.HTML(
         "<h1>CS581 Final Project Demo - Dynamic Programming & Monte-Carlo RL Methods (<a href='https://huggingface.co/spaces/acozma/CS581-Algos-Demo'>HF Space</a>)</h1>"
     )
@@ -358,7 +371,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
             with gr.Row():
                 out_state = gr.components.Textbox(label="Current State")
                 out_action = gr.components.Textbox(label="Chosen Action")
-                out_reward = gr.components.Textbox(label="Last Reward")
+                out_reward = gr.components.Textbox(label="Reward Received")
 
         out_image_policy = gr.components.Image(
             label="Action Sampled vs Policy Distribution for Current State",

@@ -140,7 +140,7 @@ class MCAgent(AgentBase):
             if log_wandb:
                 wandb.log(stats)
 
-            if test_running_success_rate > 0.99999:
+            if test_running_success_rate > 0.99:
                 if save_best:
                     if self.run_name is None:
                         print("WARNING: run_name is None, not saving best policy.")

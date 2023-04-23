@@ -82,19 +82,22 @@ class AgentBase:
 
     def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
-        episode_hist, solved, rgb_array = (
-            [],
-            False,
-            self.env.render() if render else None,
-        )
+        # action = self.choose_action(state, **kwargs)
+        episode_hist = []
+        solved, done = False, False
+        rgb_array = self.env.render() if render else None
 
+        i = 0
         # Generate an episode following the current policy
-        for _ in range(max_steps):
-            # Sample an action from the policy
+        while i < max_steps and not solved and not done:
+            # Render the environment if needed
+            rgb_array = self.env.render() if render else None
+            # Sample the next action from the policy
             action = self.choose_action(state, **kwargs)
+            # Keeping track of the trajectory
+            episode_hist.append((state, action, None))
             # Take the action and observe the reward and next state
             next_state, reward, done, _, _ = self.env.step(action)
-
             if self.env_name == "FrozenLake-v1":
                 if done:
                     reward = 100 if reward == 1 else -10
@@ -102,33 +105,27 @@ class AgentBase:
                     reward = -1
 
             # Keeping track of the trajectory
-            episode_hist.append((state, action, reward))
+            episode_hist[-1] = (state, action, reward)
+            # Generate the output at intermediate steps for the demo
             yield episode_hist, solved, rgb_array
-
-            # Rendering new frame if needed
-            rgb_array = self.env.render() if render else None
 
             # For CliffWalking-v0 and Taxi-v3, the episode is solved when it terminates
             if done and self.env_name in ["CliffWalking-v0", "Taxi-v3"]:
                 solved = True
-                break
 
             # For FrozenLake-v1, the episode terminates when the agent moves into a hole or reaches the goal
             # We consider the episode solved when the agent reaches the goal
             if done and self.env_name == "FrozenLake-v1":
                 if next_state == self.env.nrow * self.env.ncol - 1:
                     solved = True
-                    break
                 else:
                     # Instead of terminating the episode when the agent moves into a hole, we reset the environment
                     # This is to keep consistent with the other environments
-                    done = False
+                    done, solved = False, False
                     next_state, _ = self.env.reset()
 
-            if solved or done:
-                break
-
             state = next_state
+            i += 1
 
         rgb_array = self.env.render() if render else None
         yield episode_hist, solved, rgb_array
