@@ -36,7 +36,8 @@ class DPAgent(Shared):
                     for probability, next_state, reward, done in self.env.P[state][
                         action
                     ]:
-                        if state == self.env.observation_space.n-1: reward = 1
+                        if self.env_name == "CliffWalking-v0" and state == self.env.observation_space.n-1: 
+                            reward = 1
                         expected_value += probability * (
                             reward + self.gamma * self.V[next_state]
                         )
@@ -58,7 +59,8 @@ class DPAgent(Shared):
             for a in range(self.env.action_space.n):
                 expected_value = 0
                 for probability, next_state, reward, done in self.env.P[s][a]:
-                    if state == self.env.observation_space.n-1: reward = 1
+                    if self.env_name == "CliffWalking-v0" and state == self.env.observation_space.n-1: 
+                            reward = 1
                     expected_value += probability * (
                         reward + self.gamma * self.V[next_state]
                     )
