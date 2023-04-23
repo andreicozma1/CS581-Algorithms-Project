@@ -10,7 +10,9 @@ max_steps = 200
 
 num_tests = 10
 
-vals_update_type = ["first_visit"]
+vals_update_type = [
+    "first_visit"
+]  # Every visit takes too long due to this environment's reward structure
 vals_epsilon = [0.1, 0.2, 0.3, 0.4, 0.5]
 vals_gamma = [1.0, 0.98, 0.96, 0.94]
 
@@ -21,7 +23,7 @@ def run_test(args):
     )
 
 
-with multiprocessing.Pool(16) as p:
+with multiprocessing.Pool(8) as p:
     tests = []
     for update_type in vals_update_type:
         for gamma in vals_gamma:
