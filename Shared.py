@@ -12,18 +12,21 @@ class Shared:
         gamma=0.99,
         epsilon=0.1,
         run_name=None,
-        frozenlake_size=8,
+        seed=None,
         **kwargs,
     ):
         print("=" * 80)
         print(f"# Init Agent - {env}")
-        print(f"- epsilon: {epsilon}")
-        print(f"- gamma: {gamma}")
-        print(f"- run_name: {run_name}")
-        self.run_name = run_name
+
         self.env_name = env
-        self.epsilon, self.gamma = epsilon, gamma
+        self.epsilon, self.gamma = float(epsilon), float(gamma)
+        print(f"- epsilon: {self.epsilon}")
+        print(f"- gamma: {self.gamma}")
         self.epsilon_override = None
+
+        self.run_name = f"{run_name}_" if run_name is not None else ""
+        self.run_name += f"{env}_gamma:{gamma}_epsilon:{epsilon}"
+        print(f"- run_name: {run_name}")
 
         self.env_kwargs = {k: v for k, v in kwargs.items() if k in ["render_mode"]}
         if self.env_name == "FrozenLake-v1":
@@ -39,7 +42,15 @@ class Shared:
             #     "FHFFHFHF",
             #     "FFFHFFFG",
             # ]
-            self.env_kwargs["desc"] = generate_random_map(size=frozenlake_size)
+            size = int(kwargs.get("size", 8))
+            print(f"- size: {size}")
+            self.run_name += f"_size:{size}"
+
+            seed = int(seed) if seed is not None else np.random.randint(0, 100000)
+            print(f"- seed: {seed}")
+            self.run_name += f"_seed:{seed}"
+
+            self.env_kwargs["desc"] = generate_random_map(size=size, seed=seed)
             self.env_kwargs["is_slippery"] = False
 
         self.env = gym.make(self.env_name, **self.env_kwargs)
@@ -150,13 +161,21 @@ class Shared:
             )
         return success_rate
 
-    def save_policy(self, fname="policy.npy", save_dir=None):
+    def save_policy(self, fname=None, save_dir=None):
+        if fname is None and self.run_name is None:
+            raise ValueError("Must provide a filename or a run name to save the policy")
+        elif fname is None:
+            fname = self.run_name
+
         if save_dir is not None:
             os.makedirs(save_dir, exist_ok=True)
             fname = os.path.join(save_dir, fname)
-        print(f"Saving policy to: {fname}")
+
+        print(f"Saving policy to: '{fname}'")
         np.save(fname, self.Pi)
 
     def load_policy(self, fname="policy.npy"):
-        print(f"Loading policy from: {fname}")
+        print(f"Loading policy from: '{fname}'")
+        if not fname.endswith(".npy"):
+            fname += ".npy"
         self.Pi = np.load(fname)

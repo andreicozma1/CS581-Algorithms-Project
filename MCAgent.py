@@ -7,7 +7,7 @@ from Shared import Shared
 
 class MCAgent(Shared):
     def __init__(self, /, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(run_name=self.__class__.__name__, **kwargs)
         self.reset()
 
     def reset(self):
@@ -79,6 +79,7 @@ class MCAgent(Shared):
         **kwargs,
     ):
         print(f"Training agent for {n_train_episodes} episodes...")
+        self.run_name = f"{self.run_name}_{update_type}"
 
         (
             train_running_success_rate,
@@ -140,7 +141,7 @@ class MCAgent(Shared):
             if log_wandb:
                 wandb.log(stats)
 
-            if test_running_success_rate > 0.999:
+            if test_running_success_rate > 0.99999:
                 if save_best:
                     if self.run_name is None:
                         print("WARNING: run_name is None, not saving best policy.")

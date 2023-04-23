@@ -1,5 +1,6 @@
 import os
 import time
+import warnings
 import numpy as np
 import gradio as gr
 
@@ -23,6 +24,7 @@ try:
     all_policies = [
         file for file in os.listdir(policies_folder) if file.endswith(".npy")
     ]
+    all_policies.sort()
 except FileNotFoundError:
     print("ERROR: No policies folder found!")
     all_policies = []
@@ -70,8 +72,10 @@ def reset(state, policy_fname):
     state.live_render_fps = default_render_fps
     state.live_epsilon = default_epsilon
     state.live_steps_forward = None
-    return gr.update(value=pause_val_map_inv[not state.live_paused]), gr.update(
-        interactive=state.live_paused
+    return (
+        state,
+        gr.update(value=pause_val_map_inv[not state.live_paused]),
+        gr.update(interactive=state.live_paused),
     )
 
 
@@ -135,15 +139,32 @@ def run(
     policy_path = os.path.join(policies_folder, policy_fname)
     props = policy_fname.split("_")
 
-    if len(props) < 2:
+    try:
+        agent_key, env_key = props[0], props[1]
+        agent_args = {}
+        for prop in props[2:]:
+            props_split = prop.split(":")
+            if len(props_split) == 2:
+                agent_args[props_split[0]] = props_split[1]
+            else:
+                warnings.warn(
+                    f"Skipping property {prop} as it does not have the format 'key:value'.",
+                    UserWarning,
+                )
+    except IndexError:
         yield localstate, None, None, None, None, None, None, None, None, None, None, "🚫 Please select a valid policy file."
         return
 
-    agent_type, env_name = props[0], props[1]
-
-    agent = AGENTS_MAP[agent_type](env=env_name, render_mode="rgb_array")
+    agent_args.update(
+        {
+            "env": env_key,
+            "render_mode": "rgb_array",
+        }
+    )
+    print("agent_args:", agent_args)
+    agent = AGENTS_MAP[agent_key](**agent_args)
     agent.load_policy(policy_path)
-    env_action_map = action_map.get(env_name)
+    env_action_map = action_map.get(env_key)
 
     solved, frame_env, frame_policy = None, None, None
     episode, step, state, action, reward, last_reward = (
@@ -255,7 +276,7 @@ def run(
                 f"Episode: {ep_str(episode + 1)} - step: {step_str(step)} - state: {state} - action: {action} - reward: {reward} (epsilon: {localstate.live_epsilon:.2f}) (frame time: {1 / localstate.live_render_fps:.2f}s)"
             )
 
-            yield localstate, agent_type, env_name, frame_env, frame_policy, ep_str(
+            yield localstate, agent_key, env_key, frame_env, frame_policy, ep_str(
                 episode + 1
             ), ep_str(episodes_solved), step_str(
                 step
@@ -272,7 +293,7 @@ def run(
                 time.sleep(1 / localstate.live_render_fps)
 
             while localstate.live_paused and localstate.live_steps_forward is None:
-                yield localstate, agent_type, env_name, frame_env, frame_policy, ep_str(
+                yield localstate, agent_key, env_key, frame_env, frame_policy, ep_str(
                     episode + 1
                 ), ep_str(episodes_solved), step_str(
                     step
@@ -285,8 +306,8 @@ def run(
                 localstate.should_reset = False
                 yield (
                     localstate,
-                    agent_type,
-                    env_name,
+                    agent_key,
+                    env_key,
                     np.ones((frame_env_h, frame_env_w, 3)),
                     np.ones((frame_policy_h, frame_policy_res)),
                     ep_str(episode + 1),
@@ -305,7 +326,7 @@ def run(
         time.sleep(0.25)
 
     localstate.current_policy = None
-    yield localstate, agent_type, env_name, frame_env, frame_policy, ep_str(
+    yield localstate, agent_key, env_key, frame_env, frame_policy, ep_str(
         episode + 1
     ), ep_str(episodes_solved), step_str(step), state, action, reward, "Done!"
 

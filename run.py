@@ -1,7 +1,7 @@
 import argparse
 import wandb
 
-from agents import AGENTS_MAP
+from agents import AGENTS_MAP, load_agent
 
 
 def main():
@@ -97,6 +97,20 @@ def main():
     )
 
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="The seed to use when generating the FrozenLake environment. If not provided, a random seed is used. (default: None)",
+    )
+
+    parser.add_argument(
+        "--size",
+        type=int,
+        default=8,
+        help="The size to use when generating the FrozenLake environment. (default: 8)",
+    )
+
+    parser.add_argument(
         "--render_mode",
         type=str,
         default=None,
@@ -123,13 +137,12 @@ def main():
 
     args = parser.parse_args()
     print(vars(args))
-    agent = AGENTS_MAP[args.agent](**dict(args._get_kwargs()))
 
-    run_name = f"{agent.__class__.__name__}_{args.env}_e{args.n_train_episodes}_s{args.max_steps}_g{args.gamma}_e{args.epsilon}_{args.update_type}"
+    agent = load_agent(args.agent, **dict(args._get_kwargs()))
+
+    agent.run_name += f"_e{args.n_train_episodes}_s{args.max_steps}"
     if args.wandb_run_name_suffix is not None:
-        run_name += f"+{args.wandb_run_name_suffix}"
-
-    agent.run_name = run_name
+        agent.run_name += f"+{args.wandb_run_name_suffix}"
 
     try:
         if args.train:
@@ -137,7 +150,7 @@ def main():
             if args.wandb_project is not None:
                 wandb.init(
                     project=args.wandb_project,
-                    name=run_name,
+                    name=agent.run_name,
                     group=args.agent,
                     job_type=args.wandb_job_type,
                     config=dict(args._get_kwargs()),
@@ -154,13 +167,8 @@ def main():
                 save_best_dir=args.save_dir,
             )
             if not args.no_save:
-                agent.save_policy(
-                    fname=f"{run_name}.npy",
-                    save_dir=args.save_dir,
-                )
+                agent.save_policy(save_dir=args.save_dir)
         elif args.test is not None:
-            if not args.test.endswith(".npy"):
-                args.test += ".npy"
             agent.load_policy(args.test)
             agent.test(
                 n_test_episodes=args.n_test_episodes,
