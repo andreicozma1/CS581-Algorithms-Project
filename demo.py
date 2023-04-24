@@ -79,7 +79,7 @@ def reset_change(state, policy_fname):
 
 
 def reset_click(state):
-    state.should_reset = True
+    state.should_reset = state.current_policy is not None
     state.live_paused = default_paused
     state.live_render_fps = default_render_fps
     state.live_epsilon = default_epsilon
