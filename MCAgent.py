@@ -20,7 +20,7 @@ class MCAgent(AgentBase):
         self.Pi = np.full(
             (self.n_states, self.n_actions), self.epsilon / self.n_actions
         )
-        # The greedy action receives the remaining probability mass
+        # For the initial policy, we randomly select a greedy action for each state
         self.Pi[
             np.arange(self.n_states),
             np.random.randint(self.n_actions, size=self.n_states),
