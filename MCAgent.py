@@ -5,35 +5,60 @@ from AgentBase import AgentBase
 
 
 class MCAgent(AgentBase):
-    def __init__(self, /, **kwargs):
+    def __init__(
+        self, /, update_type="on-policy", **kwargs  # "on-policy" or "off-policy
+    ):
         super().__init__(run_name=self.__class__.__name__, **kwargs)
+        self.update_type = update_type
+        self.run_name = f"{self.run_name}_{self.update_type}"
         self.initialize()
 
     def initialize(self):
         print("Resetting all state variables...")
         # The Q-Table holds the current expected return for each state-action pair
-        self.Q = np.zeros((self.n_states, self.n_actions))
-        # R keeps track of all the returns that have been observed for each state-action pair to update Q
-        self.R = [[[] for _ in range(self.n_actions)] for _ in range(self.n_states)]
-        # An arbitrary e-greedy policy:
-        # With probability epsilon, sample an action uniformly at random
-        self.Pi = np.full(
-            (self.n_states, self.n_actions), self.epsilon / self.n_actions
-        )
-        # For the initial policy, we randomly select a greedy action for each state
-        self.Pi[
-            np.arange(self.n_states),
-            np.random.randint(self.n_actions, size=self.n_states),
-        ] = (
-            1 - self.epsilon + self.epsilon / self.n_actions
-        )
+        self.Q = np.random.rand(self.n_states, self.n_actions)
+        # self.Q = np.zeros((self.n_states, self.n_actions))
+
+        if self.update_type.startswith("on_policy"):
+            # For On-Policy update type:
+            # R keeps track of all the returns that have been observed for each state-action pair to update Q
+            self.R = [[[] for _ in range(self.n_actions)] for _ in range(self.n_states)]
+            # An arbitrary e-greedy policy:
+            self.Pi = self.create_soft_policy()
+        elif self.update_type.startswith("off_policy"):
+            # For Off-Policy update type:
+            self.C = np.zeros((self.n_states, self.n_actions))
+            # Target policy is greedy with respect to the current Q
+            self.Pi = np.zeros((self.n_states, self.n_actions))
+            self.Pi[np.arange(self.n_states), np.argmax(self.Q, axis=1)] = 1.0
+            # Behavior policy is e-greedy with respect to the current Q
+            self.Pi_behaviour = self.create_soft_policy(random=False)
+        else:
+            raise ValueError(
+                f"update_type must be either 'on_policy' or 'off_policy', but got {self.update_type}"
+            )
         print("=" * 80)
         print("Initial policy:")
         print(self.Pi)
         print("=" * 80)
 
-    def update_first_visit(self, episode_hist):
-        G = 0
+    def create_soft_policy(self, random=True):
+        # An arbitrary e-greedy policy:
+        # With probability epsilon, sample an action uniformly at random
+        Pi = np.full((self.n_states, self.n_actions), self.epsilon / self.n_actions)
+        # For the initial policy, we randomly select a greedy action for each state
+        Pi[
+            np.arange(self.n_states),
+            np.random.randint(self.n_actions, size=self.n_states)
+            if random
+            else np.argmax(self.Q, axis=1),
+        ] = (
+            1.0 - self.epsilon + self.epsilon / self.n_actions
+        )
+        return Pi
+
+    def update_on_policy(self, episode_hist):
+        G = 0.0
         # For each step of the episode, in reverse order
         for t in range(len(episode_hist) - 1, -1, -1):
             state, action, reward = episode_hist[t]
@@ -52,30 +77,51 @@ class MCAgent(AgentBase):
                     1 - self.epsilon + self.epsilon / self.n_actions
                 )
 
-    def update_every_visit(self, episode_hist):
-        G = 0
-        # Backward pass through the trajectory
+    # def update_every_visit(self, episode_hist):
+    #     G = 0
+    #     # Backward pass through the trajectory
+    #     for t in range(len(episode_hist) - 1, -1, -1):
+    #         state, action, reward = episode_hist[t]
+    #         # Updating the expected return
+    #         G = self.gamma * G + reward
+    #         # Every-visit MC method:
+    #         # Updating the expected return and policy for every visit to this state-action pair
+    #         self.R[state][action].append(G)
+    #         self.Q[state, action] = np.mean(self.R[state][action])
+    #         # Updating the epsilon-greedy policy.
+    #         # With probability epsilon, sample an action uniformly at random
+    #         self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
+    #         # The greedy action receives the remaining probability mass
+    #         self.Pi[state, np.argmax(self.Q[state])] = (
+    #             1 - self.epsilon + self.epsilon / self.n_actions
+    #         )
+
+    def update_off_policy(self, episode_hist):
+        G, W = 0.0, 1.0
         for t in range(len(episode_hist) - 1, -1, -1):
             state, action, reward = episode_hist[t]
             # Updating the expected return
             G = self.gamma * G + reward
-            # Every-visit MC method:
-            # Updating the expected return and policy for every visit to this state-action pair
-            self.R[state][action].append(G)
-            self.Q[state, action] = np.mean(self.R[state][action])
-            # Updating the epsilon-greedy policy.
-            # With probability epsilon, sample an action uniformly at random
-            self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
-            # The greedy action receives the remaining probability mass
-            self.Pi[state, np.argmax(self.Q[state])] = (
-                1 - self.epsilon + self.epsilon / self.n_actions
-            )
+            self.C[state, action] = self.C[state, action] + W
+            self.Q[state, action] = self.Q[state, action] + (
+                W / self.C[state, action]
+            ) * (G - self.Q[state, action])
+            # Updating the target policy to be greedy with respect to the current Q
+            greedy_action = np.argmax(self.Q[state])
+            self.Pi[state] = np.zeros(self.n_actions)
+            self.Pi[state, greedy_action] = 1.0
+            # if At != At*, then break
+            if action != greedy_action:
+                break
+            W = W * (1.0 / self.Pi_behaviour[state, action])
+
+        # Update the behavior policy such that it has coverage of the target policy
+        self.Pi_behaviour = self.create_soft_policy(random=False)
 
     def train(
         self,
         n_train_episodes=2000,
         test_every=100,
-        update_type="first_visit",
         log_wandb=False,
         save_best=True,
         save_best_dir=None,
@@ -83,7 +129,6 @@ class MCAgent(AgentBase):
         **kwargs,
     ):
         print(f"Training agent for {n_train_episodes} episodes...")
-        self.run_name = f"{self.run_name}_{update_type}"
 
         (
             train_running_success_rate,
@@ -99,7 +144,7 @@ class MCAgent(AgentBase):
             "avg_ep_len": avg_ep_len,
         }
 
-        update_func = getattr(self, f"update_{update_type}")
+        update_func = getattr(self, f"update_{self.update_type}")
 
         tqrange = tqdm(range(n_train_episodes))
         tqrange.set_description("Training")
@@ -108,7 +153,8 @@ class MCAgent(AgentBase):
             self.wandb_log_img(episode=None)
 
         for e in tqrange:
-            episode_hist, solved, _ = self.run_episode(**kwargs)
+            policy = self.Pi_behaviour if self.update_type == "off_policy" else self.Pi
+            episode_hist, solved, _ = self.run_episode(policy=policy, **kwargs)
             rewards = [x[2] for x in episode_hist]
             total_reward, avg_reward = sum(rewards), np.mean(rewards)
 
@@ -129,8 +175,9 @@ class MCAgent(AgentBase):
             }
             tqrange.set_postfix(stats)
 
-            # Test the agent every test_every episodes with the greedy policy (by default)
-            if e % test_every == 0:
+            # Test the agent every test_every episodes
+            if test_every > 0 and e % test_every == 0:
+                # For off policy, self.Pi is the target policy. For on policy, self.Pi is the soft policy
                 test_success_rate = self.test(verbose=False, **kwargs)
                 if log_wandb:
                     self.wandb_log_img(episode=e)

@@ -103,7 +103,7 @@ if __name__ == "__main__":
     state, _ = env.reset()
     done = False
     while not done:
-        action = dp.choose_action(state)
+        action = dp.choose_action(dp.Pi, state)
         state, reward, done, _, _ = env.step(action)
         env.render()
 

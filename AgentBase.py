@@ -62,22 +62,28 @@ class AgentBase:
         print(f"- n_states: {self.n_states}")
         print(f"- n_actions: {self.n_actions}")
 
-    def choose_action(self, state, greedy=False, **kwargs):
+    def choose_action(self, policy, state, greedy=False, **kwargs):
         """
         Sample an action from the policy.
         Also allows the ability to override the epsilon value (for the purpose of the demo)
         :param state: The current state
+        :param policy: The policy to sample from. Must be of shape (n_states, n_actions)
         :param greedy: If True, always return the greedy action (argmax of the policy at the current state)
         :return: The sampled action
         """
+        assert policy.shape == (self.n_states, self.n_actions), (
+            f"ERROR: Policy must be of shape (n_states, n_actions) = ({self.n_states}, {self.n_actions}). "
+            f"Got {policy.shape}."
+        )
+
         # If greedy is True, always return the greedy action
-        greedy_action = np.argmax(self.Pi[state])
+        greedy_action = np.argmax(policy[state])
         if greedy or self.epsilon_override == 0.0:
             return greedy_action
 
         # Otherwise, sample an action from the soft policy (epsilon-greedy)
         if self.epsilon_override is None:
-            return np.random.choice(self.n_actions, p=self.Pi[state])
+            return np.random.choice(self.n_actions, p=policy[state])
 
         # If we ever want to manually override the epsilon value, it happens here
         return np.random.choice(
@@ -85,7 +91,7 @@ class AgentBase:
             p=[1.0 - self.epsilon_override, self.epsilon_override],
         )
 
-    def generate_episode(self, max_steps=500, render=False, **kwargs):
+    def generate_episode(self, policy, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
         # action = self.choose_action(state, **kwargs)
         episode_hist, solved, done = [], False, False
@@ -97,7 +103,7 @@ class AgentBase:
             # Render the environment if needed
             rgb_array = self.env.render() if render else None
             # Sample the next action from the policy
-            action = self.choose_action(state, **kwargs)
+            action = self.choose_action(policy, state, **kwargs)
             # Keeping track of the trajectory
             episode_hist.append((state, action, None))
             # Take the action and observe the reward and next state
@@ -134,10 +140,10 @@ class AgentBase:
         rgb_array = self.env.render() if render else None
         yield episode_hist, solved, rgb_array
 
-    def run_episode(self, max_steps=500, render=False, **kwargs):
+    def run_episode(self, policy, max_steps=500, render=False, **kwargs):
         # Run the generator until the end
         episode_hist, solved, rgb_array = list(
-            self.generate_episode(max_steps, render, **kwargs)
+            self.generate_episode(policy, max_steps, render, **kwargs)
         )[-1]
         return episode_hist, solved, rgb_array
 
@@ -146,7 +152,7 @@ class AgentBase:
             print(f"Testing agent for {n_test_episodes} episodes...")
         num_successes = 0
         for e in range(n_test_episodes):
-            _, solved, _ = self.run_episode(greedy=greedy, **kwargs)
+            _, solved, _ = self.run_episode(policy=self.Pi, greedy=greedy, **kwargs)
             num_successes += solved
             if verbose:
                 word = "reached" if solved else "did not reach"
