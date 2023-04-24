@@ -303,6 +303,7 @@ def run(
 
             if localstate.should_reset is True:
                 localstate.should_reset = False
+                localstate.current_policy = None
                 yield (
                     localstate,
                     None,
