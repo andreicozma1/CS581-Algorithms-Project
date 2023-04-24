@@ -7,17 +7,20 @@ from AgentBase import AgentBase
 class MCAgent(AgentBase):
     def __init__(self, /, **kwargs):
         super().__init__(run_name=self.__class__.__name__, **kwargs)
-        self.reset()
+        self.initialize()
 
-    def reset(self):
+    def initialize(self):
         print("Resetting all state variables...")
+        # The Q-Table holds the current expected return for each state-action pair
         self.Q = np.zeros((self.n_states, self.n_actions))
+        # R keeps track of all the returns that have been observed for each state-action pair to update Q
         self.R = [[[] for _ in range(self.n_actions)] for _ in range(self.n_states)]
-
-        # An arbitrary e-greedy policy
+        # An arbitrary e-greedy policy:
+        # With probability epsilon, sample an action uniformly at random
         self.Pi = np.full(
             (self.n_states, self.n_actions), self.epsilon / self.n_actions
         )
+        # The greedy action receives the remaining probability mass
         self.Pi[
             np.arange(self.n_states),
             np.random.randint(self.n_actions, size=self.n_states),
@@ -37,12 +40,14 @@ class MCAgent(AgentBase):
             # Updating the expected return
             G = self.gamma * G + reward
             # First-visit MC method:
-            # Only update if we have not visited this state-action pair before
+            # Updating the expected return and policy only if this is the first visit to this state-action pair
             if (state, action) not in [(x[0], x[1]) for x in episode_hist[:t]]:
                 self.R[state][action].append(G)
                 self.Q[state, action] = np.mean(self.R[state][action])
                 # Updating the epsilon-greedy policy.
+                # With probability epsilon, sample an action uniformly at random
                 self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
+                # The greedy action receives the remaining probability mass
                 self.Pi[state, np.argmax(self.Q[state])] = (
                     1 - self.epsilon + self.epsilon / self.n_actions
                 )
@@ -55,11 +60,13 @@ class MCAgent(AgentBase):
             # Updating the expected return
             G = self.gamma * G + reward
             # Every-visit MC method:
-            # Update the expected return for every visit to this state-action pair
+            # Updating the expected return and policy for every visit to this state-action pair
             self.R[state][action].append(G)
             self.Q[state, action] = np.mean(self.R[state][action])
             # Updating the epsilon-greedy policy.
+            # With probability epsilon, sample an action uniformly at random
             self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
+            # The greedy action receives the remaining probability mass
             self.Pi[state, np.argmax(self.Q[state])] = (
                 1 - self.epsilon + self.epsilon / self.n_actions
             )
