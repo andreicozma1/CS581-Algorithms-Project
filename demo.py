@@ -92,31 +92,31 @@ def reset_click(state):
 
 
 def change_render_fps(state, x):
-    print("Changing render fps:", x)
+    print("change_render_fps:", x)
     state.live_render_fps = x
     return state
 
 
 def change_render_fps_update(state, x):
-    print("Changing render fps:", x)
+    print("change_render_fps:", x)
     state.live_render_fps = x
     return state, gr.update(value=x)
 
 
 def change_epsilon(state, x):
-    print("Changing greediness:", x)
+    print("change_epsilon:", x)
     state.live_epsilon = x
     return state
 
 
 def change_epsilon_update(state, x):
-    print("Changing greediness:", x)
+    print("change_epsilon:", x)
     state.live_epsilon = x
     return state, gr.update(value=x)
 
 
 def change_paused(state, x):
-    print("Changing paused:", x)
+    print("change_paused:", x)
     state.live_paused = pause_val_map[x]
     return (
         state,
@@ -218,7 +218,12 @@ def run(
                 (action + 0.5) * frame_policy_res // len(curr_policy)
             )
 
-            frame_policy_label_color = 1.0 - frame_policy[label_loc_h, label_loc_w]
+            frame_policy_label_color = 0.0
+            if frame_policy[label_loc_h, label_loc_w] > 0.5:
+                frame_policy_label_color = 0.0
+            else:
+                frame_policy_label_color = 1.0
+
             frame_policy_label_font = cv2.FONT_HERSHEY_SIMPLEX
             frame_policy_label_thicc = 1
             action_text_scale, action_text_label_scale = 1.0, 0.6
