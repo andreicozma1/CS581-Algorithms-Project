@@ -74,7 +74,6 @@ class AgentBase:
         if self.epsilon_override is None:
             return np.random.choice(self.n_actions, p=self.Pi[state])
 
-        print("epsilon_override", self.epsilon_override)
         return np.random.choice(
             [greedy_action, np.random.randint(self.n_actions)],
             p=[1.0 - self.epsilon_override, self.epsilon_override],
