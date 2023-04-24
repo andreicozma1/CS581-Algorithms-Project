@@ -91,7 +91,12 @@ class AgentBase:
             p=[1.0 - self.epsilon_override, self.epsilon_override],
         )
 
-    def generate_episode(self, policy, max_steps=500, render=False, **kwargs):
+    def generate_episode(self, policy, max_steps=None, render=False, **kwargs):
+        if max_steps is None:
+            # If max_steps is not specified, we use a rough estimate of
+            # the maximum number of steps it should take to solve the environment
+            max_steps = self.n_states * self.n_actions
+
         state, _ = self.env.reset()
         episode_hist, solved, done = [], False, False
         rgb_array = self.env.render() if render else None
@@ -139,7 +144,7 @@ class AgentBase:
         rgb_array = self.env.render() if render else None
         yield episode_hist, solved, rgb_array
 
-    def run_episode(self, policy, max_steps=500, render=False, **kwargs):
+    def run_episode(self, policy, max_steps=None, render=False, **kwargs):
         # Run the generator until the end
         episode_hist, solved, rgb_array = list(
             self.generate_episode(policy, max_steps, render, **kwargs)

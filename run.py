@@ -39,8 +39,8 @@ def main():
     parser.add_argument(
         "--max_steps",
         type=int,
-        default=200,
-        help="The maximum number of steps per episode before the episode is forced to end. (default: 200)",
+        default=None,
+        help="The maximum number of steps per episode before the episode is forced to end. If not provided, defaults to the number of states in the environment. (default: None)",
     )
 
     ### Agent parameters
