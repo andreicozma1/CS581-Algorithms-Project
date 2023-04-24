@@ -9,13 +9,13 @@ parser = argparse.ArgumentParser(description="Run parameter tests for MC agent")
 parser.add_argument(
     "--env",
     type=str,
-    default="Taxi-v3",
+    default="FrozenLake-v1",
     help="environment to run",
 )
 parser.add_argument(
     "--num_tests",
     type=int,
-    default=25,
+    default=10,
     help="number of tests to run for each parameter combination",
 )
 parser.add_argument(
@@ -43,13 +43,13 @@ vals_size = [8, 16, 32, 64]
 
 if env == "CliffWalking-v0":
     n_train_episodes = 2500
-    max_steps = 200
+    # max_steps = 200
 elif env == "FrozenLake-v1":
     n_train_episodes = 25000
-    max_steps = 200
+    # max_steps = 200
 elif env == "Taxi-v3":
     n_train_episodes = 10000
-    max_steps = 500
+    # max_steps = 500
 else:
     raise ValueError(f"Unsupported environment: {env}")
 
