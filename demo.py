@@ -347,7 +347,7 @@ with gr.Blocks(title="CS581 Demo") as demo:
         all_policies = []
 
     gr.components.HTML(
-        "<h1>CS581 Final Project Demo - Dynamic Programming & Monte-Carlo RL Methods (<a href='https://huggingface.co/spaces/acozma/CS581-Algos-Demo'>HF Space</a>)</h1>"
+        "<h1>CS581 Final Project Demo - Dynamic Programming & Monte-Carlo RL Methods (<a href='https://github.com/andreicozma1/CS581-Algorithms-Project'>GitHub</a>) (<a href='https://huggingface.co/spaces/acozma/CS581-Algos-Demo'>HF Space</a>)</h1>"
     )
 
     localstate = gr.State(RunState())

@@ -11,9 +11,11 @@ pinned: true
 
 # CS581 Final Project - Dynamic Programming & Monte-Carlo RL Methods
 
-[Google Slides](https://docs.google.com/presentation/d/1v4WwBQKoPnGiyCMXgUs-pCCJ8IwZqM3thUf-Ky00eTQ/edit?usp=sharing)
+Authors: Andrei Cozma and Landon Harris
 
 Evolution of Reinforcement Learning methods from pure Dynamic Programming-based methods to Monte Carlo methods + Bellman Optimization Comparison  
+
+[Google Slides](https://docs.google.com/presentation/d/1v4WwBQKoPnGiyCMXgUs-pCCJ8IwZqM3thUf-Ky00eTQ/edit?usp=sharing)
 
 # 1. Requirements
 
