@@ -63,17 +63,23 @@ class AgentBase:
         print(f"- n_actions: {self.n_actions}")
 
     def choose_action(self, state, greedy=False, **kwargs):
-        # Sample an action from the policy.
-        # The epsilon_override argument allows forcing the use of a new epsilon value than the one previously used during training.
-        # The ability to override was mostly added for testing purposes and for the demo.
+        """
+        Sample an action from the policy.
+        Also allows the ability to override the epsilon value (for the purpose of the demo)
+        :param state: The current state
+        :param greedy: If True, always return the greedy action (argmax of the policy at the current state)
+        :return: The sampled action
+        """
+        # If greedy is True, always return the greedy action
         greedy_action = np.argmax(self.Pi[state])
-
         if greedy or self.epsilon_override == 0.0:
             return greedy_action
 
+        # Otherwise, sample an action from the soft policy (epsilon-greedy)
         if self.epsilon_override is None:
             return np.random.choice(self.n_actions, p=self.Pi[state])
 
+        # If we ever want to manually override the epsilon value, it happens here
         return np.random.choice(
             [greedy_action, np.random.randint(self.n_actions)],
             p=[1.0 - self.epsilon_override, self.epsilon_override],
