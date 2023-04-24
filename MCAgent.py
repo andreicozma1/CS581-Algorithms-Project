@@ -34,34 +34,32 @@ class MCAgent(AgentBase):
         # For each step of the episode, in reverse order
         for t in range(len(episode_hist) - 1, -1, -1):
             state, action, reward = episode_hist[t]
-            # Update the expected return
+            # Updating the expected return
             G = self.gamma * G + reward
-            # If we haven't already visited this state-action pair up to this point, then we can update the Q-table and policy
-            # This is the first-visit MC method
+            # First-visit MC method:
+            # Only update if we have not visited this state-action pair before
             if (state, action) not in [(x[0], x[1]) for x in episode_hist[:t]]:
                 self.R[state][action].append(G)
                 self.Q[state, action] = np.mean(self.R[state][action])
-                # Epsilon-greedy policy update
+                # Updating the epsilon-greedy policy.
                 self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
-                # the greedy action is the one with the highest Q-value
                 self.Pi[state, np.argmax(self.Q[state])] = (
                     1 - self.epsilon + self.epsilon / self.n_actions
                 )
 
     def update_every_visit(self, episode_hist):
         G = 0
-        # For each step of the episode, in reverse order
+        # Backward pass through the trajectory
         for t in range(len(episode_hist) - 1, -1, -1):
             state, action, reward = episode_hist[t]
-            # Update the expected return
+            # Updating the expected return
             G = self.gamma * G + reward
-            # We update the Q-table and policy even if we have visited this state-action pair before
-            # This is the every-visit MC method
+            # Every-visit MC method:
+            # Update the expected return for every visit to this state-action pair
             self.R[state][action].append(G)
             self.Q[state, action] = np.mean(self.R[state][action])
-            # Epsilon-greedy policy update
+            # Updating the epsilon-greedy policy.
             self.Pi[state] = np.full(self.n_actions, self.epsilon / self.n_actions)
-            # the greedy action is the one with the highest Q-value
             self.Pi[state, np.argmax(self.Q[state])] = (
                 1 - self.epsilon + self.epsilon / self.n_actions
             )
