@@ -88,8 +88,7 @@ class AgentBase:
     def generate_episode(self, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
         # action = self.choose_action(state, **kwargs)
-        episode_hist = []
-        solved, done = False, False
+        episode_hist, solved, done = [], False, False
         rgb_array = self.env.render() if render else None
 
         i = 0
