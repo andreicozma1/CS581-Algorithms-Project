@@ -16,8 +16,12 @@ class MCAgent(AgentBase):
     def initialize(self):
         print("Resetting all state variables...")
         # The Q-Table holds the current expected return for each state-action pair
-        self.Q = np.random.rand(self.n_states, self.n_actions)
+        # random uniform initialization
+        self.Q = np.random.uniform(-1, 1, size=(self.n_states, self.n_actions))
+        # other alternatives:
         # self.Q = np.zeros((self.n_states, self.n_actions))
+        # self.Q = np.random.rand(self.n_states, self.n_actions)
+        # self.Q = np.random.normal(0, 1, size=(self.n_states, self.n_actions))
 
         if self.update_type.startswith("on_policy"):
             # For On-Policy update type:
@@ -28,11 +32,11 @@ class MCAgent(AgentBase):
         elif self.update_type.startswith("off_policy"):
             # For Off-Policy update type:
             self.C = np.zeros((self.n_states, self.n_actions))
-            # Target policy is greedy with respect to the current Q
+            # Target policy is greedy with respect to the current Q (ties broken consistently)
             self.Pi = np.zeros((self.n_states, self.n_actions))
             self.Pi[np.arange(self.n_states), np.argmax(self.Q, axis=1)] = 1.0
             # Behavior policy is e-greedy with respect to the current Q
-            self.Pi_behaviour = self.create_soft_policy(random=False)
+            self.Pi_behaviour = self.create_soft_policy(coverage_policy=self.Pi)
         else:
             raise ValueError(
                 f"update_type must be either 'on_policy' or 'off_policy', but got {self.update_type}"
@@ -42,16 +46,22 @@ class MCAgent(AgentBase):
         print(self.Pi)
         print("=" * 80)
 
-    def create_soft_policy(self, random=True):
-        # An arbitrary e-greedy policy:
+    def create_soft_policy(self, coverage_policy=None):
+        """
+        Create a soft policy (epsilon-greedy).
+        If coverage_policy is None, the soft policy is initialized randomly.
+        Otherwise, the soft policy is e-greedy with respect to the coverage policy. (useful for off-policy)
+        """
         # With probability epsilon, sample an action uniformly at random
         Pi = np.full((self.n_states, self.n_actions), self.epsilon / self.n_actions)
-        # For the initial policy, we randomly select a greedy action for each state
+        # The greedy action receives the remaining probability mass
+        # If coverage_policy is not provided, the greedy action is sampled randomly
+        # Otherwise we give the remaining probability mass according to the coverage policy
         Pi[
             np.arange(self.n_states),
             np.random.randint(self.n_actions, size=self.n_states)
-            if random
-            else np.argmax(self.Q, axis=1),
+            if coverage_policy is None
+            else np.argmax(coverage_policy, axis=1),
         ] = (
             1.0 - self.epsilon + self.epsilon / self.n_actions
         )
@@ -110,13 +120,13 @@ class MCAgent(AgentBase):
             greedy_action = np.argmax(self.Q[state])
             self.Pi[state] = np.zeros(self.n_actions)
             self.Pi[state, greedy_action] = 1.0
-            # if At != At*, then break
+            # If the greedy action is not the action taken by the behavior policy, then break
             if action != greedy_action:
                 break
             W = W * (1.0 / self.Pi_behaviour[state, action])
 
         # Update the behavior policy such that it has coverage of the target policy
-        self.Pi_behaviour = self.create_soft_policy(random=False)
+        self.Pi_behaviour = self.create_soft_policy(coverage_policy=self.Pi)
 
     def train(
         self,

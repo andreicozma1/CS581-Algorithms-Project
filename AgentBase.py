@@ -93,7 +93,6 @@ class AgentBase:
 
     def generate_episode(self, policy, max_steps=500, render=False, **kwargs):
         state, _ = self.env.reset()
-        # action = self.choose_action(state, **kwargs)
         episode_hist, solved, done = [], False, False
         rgb_array = self.env.render() if render else None
 
