@@ -66,11 +66,11 @@ def main():
     )
 
     parser.add_argument(
-        "--update_type",
+        "--type",
         type=str,
-        choices=["on_policy", "off_policy"],
-        default="off_policy",
-        help="The type of update to use. Only supported by Monte-Carlo agent. (default: off_policy)",
+        choices=["onpolicy", "offpolicy"],
+        default="onpolicy",
+        help="The type of update to use. Only supported by Monte-Carlo agent. (default: onpolicy)",
     )
 
     ### Environment parameters

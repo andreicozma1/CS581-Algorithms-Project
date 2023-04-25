@@ -154,7 +154,8 @@ def run(
         agent = load_agent(
             policy_path, return_agent_env_keys=True, render_mode="rgb_array"
         )
-    except ValueError:
+    except ValueError as e:
+        print(f"🚫 Error: {e}")
         yield localstate, None, None, None, None, None, None, None, None, None, None, "🚫 Please select a valid policy file."
         return
 
@@ -185,6 +186,7 @@ def run(
 
         for step, (episode_hist, solved, frame_env) in enumerate(
             agent.generate_episode(
+                policy=agent.Pi,
                 max_steps=max_steps,
                 render=True,
             )

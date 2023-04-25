@@ -5,12 +5,10 @@ from AgentBase import AgentBase
 
 
 class MCAgent(AgentBase):
-    def __init__(
-        self, /, update_type="on-policy", **kwargs  # "on-policy" or "off-policy
-    ):
+    def __init__(self, /, type="onpolicy", **kwargs):  # "on-policy" or "off-policy
         super().__init__(run_name=self.__class__.__name__, **kwargs)
-        self.update_type = update_type
-        self.run_name = f"{self.run_name}_{self.update_type}"
+        self.type = type
+        self.run_name += f"_type:{self.type}"
         self.initialize()
 
     def initialize(self):
@@ -23,13 +21,13 @@ class MCAgent(AgentBase):
         # self.Q = np.random.rand(self.n_states, self.n_actions)
         # self.Q = np.random.normal(0, 1, size=(self.n_states, self.n_actions))
 
-        if self.update_type.startswith("on_policy"):
+        if self.type.startswith("onpolicy"):
             # For On-Policy update type:
             # R keeps track of all the returns that have been observed for each state-action pair to update Q
             self.R = [[[] for _ in range(self.n_actions)] for _ in range(self.n_states)]
             # An arbitrary e-greedy policy:
             self.Pi = self.create_soft_policy()
-        elif self.update_type.startswith("off_policy"):
+        elif self.type.startswith("offpolicy"):
             # For Off-Policy update type:
             self.C = np.zeros((self.n_states, self.n_actions))
             # Target policy is greedy with respect to the current Q (ties broken consistently)
@@ -39,7 +37,7 @@ class MCAgent(AgentBase):
             self.Pi_behaviour = self.create_soft_policy(coverage_policy=self.Pi)
         else:
             raise ValueError(
-                f"update_type must be either 'on_policy' or 'off_policy', but got {self.update_type}"
+                f"Parameter 'type' must be either 'onpolicy' or 'offpolicy', but got '{self.type}'"
             )
         print("=" * 80)
         print("Initial policy:")
@@ -67,7 +65,7 @@ class MCAgent(AgentBase):
         )
         return Pi
 
-    def update_on_policy(self, episode_hist):
+    def update_onpolicy(self, episode_hist):
         G = 0.0
         # For each step of the episode, in reverse order
         for t in range(len(episode_hist) - 1, -1, -1):
@@ -106,7 +104,7 @@ class MCAgent(AgentBase):
     #             1 - self.epsilon + self.epsilon / self.n_actions
     #         )
 
-    def update_off_policy(self, episode_hist):
+    def update_offpolicy(self, episode_hist):
         G, W = 0.0, 1.0
         for t in range(len(episode_hist) - 1, -1, -1):
             state, action, reward = episode_hist[t]
@@ -154,7 +152,7 @@ class MCAgent(AgentBase):
             "avg_ep_len": avg_ep_len,
         }
 
-        update_func = getattr(self, f"update_{self.update_type}")
+        update_func = getattr(self, f"update_{self.type}")
 
         tqrange = tqdm(range(n_train_episodes))
         tqrange.set_description("Training")
@@ -163,7 +161,7 @@ class MCAgent(AgentBase):
             self.wandb_log_img(episode=None)
 
         for e in tqrange:
-            policy = self.Pi_behaviour if self.update_type == "off_policy" else self.Pi
+            policy = self.Pi_behaviour if self.type == "off_policy" else self.Pi
             episode_hist, solved, _ = self.run_episode(policy=policy, **kwargs)
             rewards = [x[2] for x in episode_hist]
             total_reward, avg_reward = sum(rewards), np.mean(rewards)
