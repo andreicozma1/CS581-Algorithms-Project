@@ -138,7 +138,9 @@ def main():
         args.agent if args.test is None else args.test, **dict(args._get_kwargs())
     )
 
-    agent.run_name += f"_e{args.n_train_episodes}_s{args.max_steps}"
+    agent.run_name += f"_e{args.n_train_episodes}"
+    if args.max_steps is not None:
+        agent.run_name += f"_s{args.max_steps}"
     if args.run_name_suffix is not None:
         agent.run_name += f"+{args.run_name_suffix}"
 
