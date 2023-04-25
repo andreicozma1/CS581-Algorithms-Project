@@ -93,8 +93,9 @@ The agent starts with a randomly initialized epsilon-greedy policy and uses eith
 ❯ python3 run.py --agent "MCAgent" --test "./policies/[saved_policy_file].npy" --render_mode human
 
 ❯ python3 run.py --help
-usage: run.py [-h] [--train] [--test TEST] [--n_train_episodes N_TRAIN_EPISODES] [--n_test_episodes N_TEST_EPISODES] [--test_every TEST_EVERY] [--max_steps MAX_STEPS] --agent {MCAgent,DPAgent} [--gamma GAMMA] [--epsilon EPSILON] [--update_type {first_visit,every_visit}]
-              [--env {CliffWalking-v0,FrozenLake-v1,Taxi-v3}] [--seed SEED] [--size SIZE] [--render_mode RENDER_MODE] [--save_dir SAVE_DIR] [--no_save] [--run_name_suffix RUN_NAME_SUFFIX] [--wandb_project WANDB_PROJECT] [--wandb_job_type WANDB_JOB_TYPE]
+usage: run.py [-h] [--train] [--test TEST] [--n_train_episodes N_TRAIN_EPISODES] [--n_test_episodes N_TEST_EPISODES] [--test_every TEST_EVERY] [--max_steps MAX_STEPS] --agent {MCAgent,DPAgent} [--gamma GAMMA]
+              [--epsilon EPSILON] [--type {onpolicy,offpolicy}] [--env {CliffWalking-v0,FrozenLake-v1,Taxi-v3}] [--seed SEED] [--size SIZE] [--render_mode RENDER_MODE] [--save_dir SAVE_DIR] [--no_save]
+              [--run_name_suffix RUN_NAME_SUFFIX] [--wandb_project WANDB_PROJECT] [--wandb_job_type WANDB_JOB_TYPE]
 
 options:
   -h, --help            show this help message and exit
@@ -107,13 +108,13 @@ options:
   --test_every TEST_EVERY
                         During training, test the agent every n episodes. (default: 100)
   --max_steps MAX_STEPS
-                        The maximum number of steps per episode before the episode is forced to end. (default: 200)
+                        The maximum number of steps per episode before the episode is forced to end. If not provided, defaults to the number of states in the environment. (default: None)
   --agent {MCAgent,DPAgent}
                         The agent to use. Currently supports one of: ['MCAgent', 'DPAgent']
   --gamma GAMMA         The value for the discount factor to use. (default: 0.99)
   --epsilon EPSILON     The value for the epsilon-greedy policy to use. (default: 0.4)
-  --update_type {first_visit,every_visit}
-                        The type of update to use. Only supported by Monte-Carlo agent. (default: first_visit)
+  --type {onpolicy,offpolicy}
+                        The type of update to use. Only supported by Monte-Carlo agent. (default: onpolicy)
   --env {CliffWalking-v0,FrozenLake-v1,Taxi-v3}
                         The Gymnasium environment to use. (default: CliffWalking-v0)
   --seed SEED           The seed to use when generating the FrozenLake environment. If not provided, a random seed is used. (default: None)

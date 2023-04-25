@@ -77,7 +77,7 @@ with multiprocessing.Pool(8) as p:
                             {
                                 "gamma": gamma,
                                 "epsilon": eps,
-                                "update_type": update_type,
+                                "type": update_type,
                                 "size": size,
                                 "run_name_suffix": i,
                             }
@@ -88,7 +88,7 @@ with multiprocessing.Pool(8) as p:
                         {
                             "gamma": gamma,
                             "epsilon": eps,
-                            "update_type": update_type,
+                            "type": update_type,
                             "run_name_suffix": i,
                         }
                         for i in range(num_tests)
