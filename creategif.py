@@ -5,21 +5,29 @@ from PIL import Image
 from PIL.Image import Transpose, Resampling
 
 
-api = wandb.Api()
-run = api.run("acozma/cs581/5ttfkav8")
+# api = wandb.Api()
+# run = api.run("acozma/cs581/5ttfkav8")
 
-print(run.summary)
-print("Downloading images...")
+# print(run.summary)
+# print("Downloading images...")
 
-for file in run.files():
-    if file.name.endswith(".png"):
-        file.download(exist_ok=True)
+# for file in run.files():
+#     if file.name.endswith(".png"):
+#         file.download(exist_ok=True)
 
-print("Finished downloading images")
+# print("Finished downloading images")
+
+
+folder_path = "./imgs/"
+policy_file_prefix = "Pi"
+q_file_prefix = "Q"
+out_name = "qtable_policy"
+sort_lambda = lambda x: int(x.split("_")[1].split(".")[0])  # key used to sort image filenames
 
 
 def process_images(image_fnames, upscale=20):
-    image_fnames.sort(key=lambda x: int(x.split("_")[-2]))
+    print(image_fnames)
+    image_fnames.sort(key=sort_lambda)
     frames = [Image.open(image) for image in image_fnames]
     frames = [frame.transpose(Transpose.ROTATE_90) for frame in frames]
     frames = [
@@ -46,14 +54,13 @@ def images_to_gif(frames, fname, duration=500):
     )
 
 
-folder_path = "./media/images"
 all_fnames = [os.path.join(folder_path, f) for f in os.listdir(folder_path)]
+print(all_fnames)
 
-
-fnames_policy = [f for f in all_fnames if os.path.basename(f).startswith("Policy")]
+fnames_policy = [f for f in all_fnames if os.path.basename(f).startswith(policy_file_prefix)))]
 policy_frames = process_images(fnames_policy)
 
-fnames_qtable = [f for f in all_fnames if os.path.basename(f).startswith("Q-table")]
+fnames_qtable = [f for f in all_fnames if os.path.basename(f).startswith(q_file_prefix)]
 qtable_frames = process_images(fnames_qtable)
 
 spacing_factor = 1 / 2
@@ -67,4 +74,4 @@ for i, (qtable, policy) in enumerate(zip(qtable_frames, policy_frames)):
     new_frame.paste(policy, (0, height + int(height * spacing_factor)))
     final_frames.append(new_frame)
 
-images_to_gif(final_frames, "qtable_policy")
+images_to_gif(final_frames, out_name)
