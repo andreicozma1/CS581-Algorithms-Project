@@ -125,7 +125,7 @@ if __name__ == "__main__":
     state, _ = env.reset()
     done = False
     while not done:
-        action = dp.choose_action(state, greedy=True)
+        action = dp.choose_action(dp.Pi, state)
         state, reward, done, _, _ = env.step(action)
         s = env.render()
         print(s)

@@ -39,8 +39,8 @@ def main():
     parser.add_argument(
         "--max_steps",
         type=int,
-        default=200,
-        help="The maximum number of steps per episode before the episode is forced to end. (default: 200)",
+        default=None,
+        help="The maximum number of steps per episode before the episode is forced to end. If not provided, defaults to the number of states in the environment. (default: None)",
     )
 
     ### Agent parameters
@@ -68,9 +68,9 @@ def main():
     parser.add_argument(
         "--update_type",
         type=str,
-        choices=["first_visit", "every_visit"],
-        default="first_visit",
-        help="The type of update to use. Only supported by Monte-Carlo agent. (default: first_visit)",
+        choices=["on_policy", "off_policy"],
+        default="off_policy",
+        help="The type of update to use. Only supported by Monte-Carlo agent. (default: off_policy)",
     )
 
     ### Environment parameters
@@ -159,7 +159,6 @@ def main():
                 test_every=args.test_every,
                 n_test_episodes=args.n_test_episodes,
                 max_steps=args.max_steps,
-                update_type=args.update_type,
                 log_wandb=args.wandb_project is not None,
                 save_best=True,
                 save_best_dir=args.save_dir,
