@@ -31,9 +31,9 @@ env, num_tests, wandb_project = args.env, args.num_tests, args.wandb_project
 agent = "MCAgent"
 
 vals_update_type = [
-    # "on_policy",
-    "off_policy",
-]  # Note: Every visit takes too long due to these environment's reward structure
+    "onpolicy",
+    "offpolicy",
+]
 # vals_gamma = [1.0, 0.98, 0.96, 0.94]
 vals_epsilon = [0.1, 0.2, 0.3, 0.4, 0.5]
 vals_gamma = [1.0]
