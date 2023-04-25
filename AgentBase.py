@@ -104,8 +104,6 @@ class AgentBase:
         i = 0
         # Generate an episode following the current policy
         while i < max_steps and not solved and not done:
-            # Render the environment if needed
-            rgb_array = self.env.render() if render else None
             # Sample the next action from the policy
             action = self.choose_action(policy, state, **kwargs)
             # Keeping track of the trajectory
@@ -122,6 +120,9 @@ class AgentBase:
             episode_hist[-1] = (state, action, reward)
             # Generate the output at intermediate steps for the demo
             yield episode_hist, solved, rgb_array
+
+            # Render the environment if needed
+            rgb_array = self.env.render() if render else None
 
             # For CliffWalking-v0 and Taxi-v3, the episode is solved when it terminates
             if done and self.env_name in ["CliffWalking-v0", "Taxi-v3"]:
